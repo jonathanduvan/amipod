@@ -1,3 +1,4 @@
+import 'package:amipod/Screens/RegisterPhoneNumber/register_phone_number.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Welcome/components/background.dart';
@@ -13,7 +14,19 @@ class Body extends StatelessWidget {
             children: <Widget>[
           Text("Reconnect. Stay Connected.",
               style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white))
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          TextButton(
+            onPressed: () {
+              print('click me');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const RegisterPhoneNumber()),
+              );
+            },
+            child: Text('Continue'),
+            // TODO: Add style to button
+          ),
         ]));
   }
 }
