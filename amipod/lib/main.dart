@@ -15,8 +15,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Amipod',
       theme: ThemeData(
-          primaryColor: primaryColor, scaffoldBackgroundColor: primaryColor),
-      home: WelcomeScreen(),
+          primaryColor: primaryColor, scaffoldBackgroundColor: backgroundColor),
+      home:
+          WelcomeScreen(), // TODO: Add check for if user has an account and has logged in on the phone before
     );
   }
 }

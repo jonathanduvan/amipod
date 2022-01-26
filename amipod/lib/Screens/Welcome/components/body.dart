@@ -14,10 +14,9 @@ class Body extends StatelessWidget {
             children: <Widget>[
           Text("Reconnect. Stay Connected.",
               style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
           TextButton(
             onPressed: () {
-              print('click me');
               Navigator.push(
                 context,
                 MaterialPageRoute(

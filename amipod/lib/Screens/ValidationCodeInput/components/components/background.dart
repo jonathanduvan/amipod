@@ -12,10 +12,11 @@ class Background extends StatelessWidget {
     Size size = MediaQuery.of(context).size;
     return Container(
         height: size.height,
-        width: double.infinity,
+        width: size.width,
         child: Stack(alignment: Alignment.topCenter, children: <Widget>[
           Positioned(
-              child: Text('Welcome Text to be replaced with Icon and blurb')),
+              child: Text(
+                  'Enter the code we sent to: *this is a placeholder for a phone nbr')),
           child,
         ]));
   }

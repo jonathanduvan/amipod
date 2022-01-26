@@ -1,7 +1,7 @@
 import 'dart:ffi';
-import 'package:amipod/Screens/ValidationCodeInput/components/validation_code_input_screen.dart';
+import 'package:amipod/Screens/CreatePin/components/create_pin_screen.dart';
+import 'package:amipod/Screens/SetupProfile/components/background.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/RegisterPhoneNumber/components/background.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/services.dart';
 
@@ -13,14 +13,8 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-  String _dropdownValue =
-      'United States'; // TODO: Use geolocale of phone to determine country to replace the default value
-
-  void _handleCountryDropdownChanged(String newValue) {
-    setState(() {
-      _dropdownValue = newValue;
-    });
-  }
+  String _textInputValue =
+      ''; // TODO: Use geolocale of phone to determine country to replace the default value
 
   Widget build(BuildContext context) {
     Size size =
@@ -29,27 +23,20 @@ class _BodyState extends State<Body> {
         child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-          Text("We'll text you a verification code. Carrier rates may apply.",
+          Text("Your profile will be visible only to any connections you make.",
               style:
                   TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          CountryDropdown(
-              dropdownValue: _dropdownValue,
-              onChanged: _handleCountryDropdownChanged),
-          TextFormField(
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-              ],
-              decoration: InputDecoration(labelText: "Phone Number")),
+          TextFormField(decoration: InputDecoration(labelText: "First Name")),
+          TextFormField(decoration: InputDecoration(labelText: "Last Name")),
           TextButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const ValidationCodeInput()),
+                MaterialPageRoute(builder: (context) => const CreatePin()),
               );
+              ;
             },
-            child: Text('Send Verification Code'),
+            child: Text('Create Profile'),
             // TODO: Add style to button
           ),
         ]));

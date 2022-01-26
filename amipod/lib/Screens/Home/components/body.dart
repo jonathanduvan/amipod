@@ -1,7 +1,6 @@
 import 'dart:ffi';
-import 'package:amipod/Screens/ValidationCodeInput/components/validation_code_input_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/RegisterPhoneNumber/components/background.dart';
+import 'package:amipod/Screens/Home/components/background.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/services.dart';
 
@@ -13,15 +12,6 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-  String _dropdownValue =
-      'United States'; // TODO: Use geolocale of phone to determine country to replace the default value
-
-  void _handleCountryDropdownChanged(String newValue) {
-    setState(() {
-      _dropdownValue = newValue;
-    });
-  }
-
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
@@ -29,27 +19,11 @@ class _BodyState extends State<Body> {
         child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-          Text("We'll text you a verification code. Carrier rates may apply.",
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          CountryDropdown(
-              dropdownValue: _dropdownValue,
-              onChanged: _handleCountryDropdownChanged),
-          TextFormField(
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-              ],
-              decoration: InputDecoration(labelText: "Phone Number")),
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ValidationCodeInput()),
-              );
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            child: Text('Send Verification Code'),
+            child: Text('Go To Start'),
             // TODO: Add style to button
           ),
         ]));
