@@ -37,7 +37,7 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         title: const Text('Welcome Back, Andy'),
       ),
-      body: Body(),
+      body: Body(currentIndex: _selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
