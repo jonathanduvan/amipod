@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Home/components/background.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:amipod/Screens/Home/components/add_button.dart';
 
-class Body extends StatefulWidget {
+class EventsView extends StatefulWidget {
   final int currentIndex;
-  const Body({Key? key, required this.currentIndex}) : super(key: key);
+  const EventsView({Key? key, required this.currentIndex}) : super(key: key);
   @override
-  _BodyState createState() => _BodyState();
+  _EventsViewState createState() => _EventsViewState();
 }
 
-class _BodyState extends State<Body> {
+class _EventsViewState extends State<EventsView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
   List<Contact> _contacts = [];
-
+  List<String> addOptions = ['New Event'];
   @override
   void initState() {
     super.initState();
@@ -78,7 +79,12 @@ class _BodyState extends State<Body> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[Spacer(), AddButtonWidget()],
+            children: <Widget>[
+              Spacer(),
+              AddButtonWidget(
+                  currentIndex: widget.currentIndex,
+                  addButtonOptions: addOptions)
+            ],
           ),
         ]));
   }
@@ -170,66 +176,5 @@ class _PermissionState extends State<PermissionWidget> {
       _permissionStatus = status;
       print(_permissionStatus);
     });
-  }
-}
-
-// Permission widget containing information about the passed [Permission]
-class AddButtonWidget extends StatefulWidget {
-  /// Constructs a [AddButtonWidget] for the supplied [Permission]
-  @override
-  _AddButtonWidgetState createState() => _AddButtonWidgetState();
-}
-
-class _AddButtonWidgetState extends State<AddButtonWidget> {
-  @override
-  void initState() {
-    super.initState();
-    _askPermissions();
-  }
-
-  Future<void> _askPermissions() async {
-    PermissionStatus permissionStatus = await _getContactPermission();
-    if (permissionStatus == PermissionStatus.granted) {
-      print('complete');
-    } else {
-      _handleInvalidPermissions(permissionStatus);
-    }
-  }
-
-  Future<PermissionStatus> _getContactPermission() async {
-    PermissionStatus permission = await Permission.contacts.status;
-    if (permission != PermissionStatus.granted &&
-        permission != PermissionStatus.permanentlyDenied) {
-      PermissionStatus permissionStatus = await Permission.contacts.request();
-      return permissionStatus;
-    } else {
-      return permission;
-    }
-  }
-
-  void _handleInvalidPermissions(PermissionStatus permissionStatus) {
-    if (permissionStatus == PermissionStatus.denied) {
-      final snackBar = SnackBar(content: Text('Access to contact data denied'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-    } else if (permissionStatus == PermissionStatus.permanentlyDenied) {
-      final snackBar =
-          SnackBar(content: Text('Contact data not available on device'));
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-          shape: CircleBorder(), padding: EdgeInsets.all(15)),
-      child: Icon(
-        Icons.add,
-        size: 30,
-      ),
-      onPressed: () {
-        _askPermissions();
-      },
-    );
   }
 }

@@ -1,4 +1,7 @@
-import 'package:amipod/Screens/Home/components/body.dart';
+import 'package:amipod/Screens/Home/components/connections_view.dart';
+import 'package:amipod/Screens/Home/components/events_view.dart';
+import 'package:amipod/Screens/Home/components/home_view.dart';
+import 'package:amipod/Screens/Home/components/reminders_view.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatefulWidget {
@@ -9,6 +12,8 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
+  List<Widget> pageList = [];
+
   static const TextStyle optionStyle =
       TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
   static const List<Widget> _widgetOptions = <Widget>[
@@ -32,12 +37,25 @@ class _HomeState extends State<Home> {
     });
   }
 
+  @override
+  void initState() {
+    pageList.add(HomeView(currentIndex: _selectedIndex));
+    pageList.add(ConnectionsView(currentIndex: _selectedIndex));
+    pageList.add(EventsView(currentIndex: _selectedIndex));
+    pageList.add(RemindersView(currentIndex: _selectedIndex));
+
+    super.initState();
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Welcome Back, Andy'),
       ),
-      body: Body(currentIndex: _selectedIndex),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pageList,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
