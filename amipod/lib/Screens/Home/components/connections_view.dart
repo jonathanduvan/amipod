@@ -6,7 +6,9 @@ import 'package:amipod/Screens/Home/components/add_button.dart';
 
 class ConnectionsView extends StatefulWidget {
   final int currentIndex;
-  const ConnectionsView({Key? key, required this.currentIndex})
+  final Function getAllContacts;
+  const ConnectionsView(
+      {Key? key, required this.currentIndex, required this.getAllContacts})
       : super(key: key);
   @override
   _ConnectionsViewState createState() => _ConnectionsViewState();
@@ -28,6 +30,10 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     var contacts = (await ContactsService.getContacts());
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          ;
+    if (contacts != null) {
+      widget.getAllContacts(contacts);
+    }
+
     setState(() {
       _contacts = contacts;
     });
