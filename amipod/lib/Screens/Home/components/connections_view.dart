@@ -37,11 +37,6 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     setState(() {
       _contacts = contacts;
     });
-
-    // Lazy load thumbnails after rendering initial contacts.
-    for (final contact in contacts) {
-      print(contact.displayName);
-    }
   }
 
   Widget build(BuildContext context) {

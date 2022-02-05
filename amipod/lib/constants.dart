@@ -1,6 +1,6 @@
 import 'dart:ffi';
-
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 const primaryColor = Color(0xFF00563F);
 const backgroundColor = Color(0xFFFBFAFB);
@@ -264,3 +264,32 @@ var countryCodes = {
   "Qatar": "974",
   "Mozambique": "258"
 };
+
+class ConnectedContact {
+  ConnectedContact({this.name, this.phone, this.location});
+  String? name;
+  String? phone;
+  LatLng? location;
+}
+
+class UnconnectedContact {
+  UnconnectedContact({this.name, this.phone});
+  String? name;
+  String? phone;
+}
+
+class ContactsMap {
+  ContactsMap({this.connected, this.unconnected});
+  List<ConnectedContact>? connected;
+  List<UnconnectedContact>? unconnected;
+}
+
+class Pod {
+  Pod(
+      {required this.name,
+      required this.connectedContacts,
+      required this.unconnectedContacts});
+  String name;
+  List<ConnectedContact> connectedContacts;
+  List<UnconnectedContact> unconnectedContacts;
+}
