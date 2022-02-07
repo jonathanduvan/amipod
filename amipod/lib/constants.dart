@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -266,16 +267,33 @@ var countryCodes = {
 };
 
 class ConnectedContact {
-  ConnectedContact({this.name, this.phone, this.location});
-  String? name;
-  String? phone;
+  ConnectedContact(
+      {required this.name,
+      required this.initials,
+      this.avatar,
+      required this.phone,
+      this.location,
+      required this.city,
+      required this.street});
+  String name;
+  String initials;
+  Uint8List? avatar;
+  String phone;
   LatLng? location;
+  String city = 'Not Available';
+  String street = 'Not Available';
 }
 
 class UnconnectedContact {
-  UnconnectedContact({this.name, this.phone});
-  String? name;
-  String? phone;
+  UnconnectedContact(
+      {required this.name,
+      required this.initials,
+      this.avatar,
+      required this.phone});
+  String name;
+  String initials;
+  Uint8List? avatar;
+  String phone;
 }
 
 class ContactsMap {

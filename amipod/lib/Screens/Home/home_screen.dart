@@ -6,6 +6,7 @@ import 'package:amipod/Screens/Home/components/map.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class Home extends StatefulWidget {
@@ -21,8 +22,8 @@ class _HomeState extends State<Home> {
   List<Widget> pageList = [];
   List<Contact> allContacts = [];
   List<LatLng> allContactLocations = []; // Will need to be a widget later
-  List<ConnectedContact>? connectedContacts = [];
-  List<UnconnectedContact>? unconnectedContacts = [];
+  List<ConnectedContact> connectedContacts = [];
+  List<UnconnectedContact> unconnectedContacts = [];
   List<Pod> allPods = [];
 
   List<LatLng> testUSLocations = [
@@ -47,54 +48,10 @@ class _HomeState extends State<Home> {
     });
   }
 
-  ContactsMap _updateConnectedContacts(List<Contact> contacts) {
-    List<ConnectedContact> connected = [];
-    List<UnconnectedContact> unconnected = [];
-
-    // Check for if connected goes here
-
-    // Dummy code for creating connectedContact list
-    int howMany = 3;
-
-    for (var i = 0; i < howMany; i++) {
-      var conCon = ConnectedContact(
-          name: contacts[i].displayName,
-          phone: contacts[i].phones?[0].value,
-          location: testUSLocations[i]);
-
-      contacts.removeAt(i);
-      connected.add(conCon);
-    }
-    for (var i = 0; i < contacts.length; i++) {
-      var unconCon = UnconnectedContact(
-          name: contacts[i].displayName, phone: contacts[i].phones?[0].value);
-
-      unconnected.add(unconCon);
-    }
-
-    var allContacts =
-        ContactsMap(connected: connected, unconnected: unconnected);
-    return allContacts;
-
-    // connected = contacts.
-  }
-
-  void _getAllContacts(List<Contact> contacts) {
-    print('papi got new contacts: ');
-    // Lazy load thumbnails after rendering initial contacts.
-    for (final contact in contacts) {
-      print(contact.displayName);
-      print(contact.phones?[0].value);
-    }
-
-    //TODO: Function to check if contact is connected or not goes here
-
-    var mapContacts = _updateConnectedContacts(contacts);
-    print(mapContacts);
+  void _getAllContacts(ContactsMap mapContacts) async {
     setState(() {
-      allContacts = contacts;
-      connectedContacts = mapContacts.connected;
-      unconnectedContacts = mapContacts.unconnected;
+      connectedContacts = mapContacts.connected!;
+      unconnectedContacts = mapContacts.unconnected!;
     });
   }
 
@@ -139,7 +96,7 @@ class _HomeState extends State<Home> {
         ],
       ),
       body: displayMap
-          ? MapView(contacts: connectedContacts!)
+          ? MapView(contacts: connectedContacts)
           : IndexedStack(
               index: _selectedIndex,
               children: pageList,
