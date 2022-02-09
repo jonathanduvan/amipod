@@ -140,6 +140,21 @@ class _ConnectionsViewState extends State<ConnectionsView> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             Text(
+              "Pods",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 18.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(left: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            Text(
               "Connections",
               style: TextStyle(
                 fontWeight: FontWeight.w600,
@@ -231,10 +246,6 @@ class _ConnectionsViewState extends State<ConnectionsView> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
           Spacer(),
-          AddButtonWidget(
-            currentIndex: widget.currentIndex,
-            addButtonOptions: addOptions,
-          )
         ],
       ),
     ]));

@@ -81,9 +81,6 @@ class _EventsViewState extends State<EventsView> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
               Spacer(),
-              AddButtonWidget(
-                  currentIndex: widget.currentIndex,
-                  addButtonOptions: addOptions)
             ],
           ),
         ]));

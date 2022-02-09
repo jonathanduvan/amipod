@@ -266,6 +266,23 @@ var countryCodes = {
   "Mozambique": "258"
 };
 
+// Pod Objects
+
+class Pod {
+  Pod(
+      {required this.name,
+      this.avatar,
+      required this.phone,
+      this.connectedContacts,
+      this.unconnectedContacts});
+  String name;
+  Uint8List? avatar;
+  String phone;
+  List<ConnectedContact>? connectedContacts;
+  List<UnconnectedContact>? unconnectedContacts;
+}
+
+// Connection Objects
 class ConnectedContact {
   ConnectedContact(
       {required this.name,
@@ -302,12 +319,15 @@ class ContactsMap {
   List<UnconnectedContact>? unconnected;
 }
 
-class Pod {
-  Pod(
-      {required this.name,
-      required this.connectedContacts,
-      required this.unconnectedContacts});
-  String name;
-  List<ConnectedContact> connectedContacts;
-  List<UnconnectedContact> unconnectedContacts;
+class TagModel {
+  String id;
+  String title;
+  Color tagColor;
+  TagModel({required this.id, required this.title, required this.tagColor});
 }
+
+final List<TagModel> connectionTags = [
+  TagModel(id: '1', title: 'Connections', tagColor: Colors.deepPurpleAccent),
+  TagModel(id: '2', title: 'Pods', tagColor: Colors.deepOrangeAccent),
+  TagModel(id: '3', title: 'Contacts', tagColor: Colors.grey),
+];
