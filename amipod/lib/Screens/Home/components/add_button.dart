@@ -8,8 +8,12 @@ class AddButtonWidget extends StatefulWidget {
 
   final int currentIndex;
   final List<String> addButtonOptions;
+  final VoidCallback onAddPressed;
   const AddButtonWidget(
-      {Key? key, required this.currentIndex, required this.addButtonOptions})
+      {Key? key,
+      required this.currentIndex,
+      required this.addButtonOptions,
+      required this.onAddPressed})
       : super(key: key);
 
   @override
@@ -58,7 +62,10 @@ class _AddButtonWidgetState extends State<AddButtonWidget> {
 
   List<PopupMenuItem> setupOptions(List addButtonOptions) {
     var options = addButtonOptions
-        .map((option) => PopupMenuItem(child: Text('${option}'), value: option))
+        .map((option) => PopupMenuItem(
+            child: Text('${option}'),
+            value: option,
+            onTap: widget.onAddPressed))
         .toList();
 
     return (options);

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:geocode/geocode.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -50,6 +51,22 @@ class _HomeState extends State<Home> {
   static const TextStyle optionStyle =
       TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
 
+  double _panelHeightClosed = 0.0;
+  double _panelHeightOpen = 0.0;
+
+  BorderRadiusGeometry radius = BorderRadius.only(
+    topLeft: Radius.circular(24.0),
+    topRight: Radius.circular(24.0),
+  );
+
+  PanelController _pc = new PanelController();
+
+  void _onPanelOpened() {
+    print(_pc.isPanelOpen);
+    print('opening panel');
+    _pc.open();
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -69,6 +86,7 @@ class _HomeState extends State<Home> {
     });
   }
 
+  bool _isAddButtonVisible = true;
   @override
   void initState() {
     pageList.add(HomeView(currentIndex: _selectedIndex));
@@ -84,7 +102,25 @@ class _HomeState extends State<Home> {
     return (connectionsIndex == index);
   }
 
+  bool _getAddButtonStatus() {
+    return (_selectedIndex != 0) && _isAddButtonVisible;
+  }
+
+  void displayAddButton() {
+    setState(() {
+      _isAddButtonVisible = true;
+    });
+  }
+
+  void hideAddButton() {
+    setState(() {
+      _isAddButtonVisible = false;
+    });
+  }
+
   Widget build(BuildContext context) {
+    _panelHeightOpen = MediaQuery.of(context).size.height * .80;
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 100,
@@ -138,18 +174,34 @@ class _HomeState extends State<Home> {
               : Container(),
         ],
       ),
-      floatingActionButton: _selectedIndex != 0
-          ? AddButtonWidget(
-              currentIndex: _selectedIndex,
-              addButtonOptions: addOptions[_selectedIndex],
-            )
-          : Container(),
-      body: displayMap
-          ? MapView(contacts: connectedContacts)
-          : IndexedStack(
-              index: _selectedIndex,
-              children: pageList,
-            ),
+      floatingActionButton: Visibility(
+          visible: (_getAddButtonStatus()),
+          child: AddButtonWidget(
+            currentIndex: _selectedIndex,
+            addButtonOptions: addOptions[_selectedIndex],
+            onAddPressed: _onPanelOpened,
+          )),
+      body: SlidingUpPanel(
+        controller: _pc,
+        color: Colors.deepOrange,
+        panelBuilder: (ScrollController sc) => _addPanel(sc),
+        borderRadius: radius,
+        onPanelClosed: () {
+          displayAddButton();
+        },
+        onPanelOpened: () {
+          hideAddButton();
+        },
+        defaultPanelState: PanelState.CLOSED,
+        maxHeight: _panelHeightOpen,
+        minHeight: _panelHeightClosed,
+        body: displayMap
+            ? MapView(contacts: connectedContacts)
+            : IndexedStack(
+                index: _selectedIndex,
+                children: pageList,
+              ),
+      ),
       bottomNavigationBar: displayMap
           ? Container(height: 0)
           : BottomNavigationBar(
@@ -177,6 +229,63 @@ class _HomeState extends State<Home> {
               onTap: _onItemTapped,
             ),
     );
+  }
+
+  Widget _addPanel(ScrollController sc) {
+    return MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: ListView(
+          padding: const EdgeInsets.only(left: 8.0),
+          controller: sc,
+          children: <Widget>[
+            SizedBox(
+              height: 12.0,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Container(
+                  width: 30,
+                  height: 5,
+                  decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.all(Radius.circular(12.0))),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 18.0,
+            ),
+            SizedBox(
+              height: 36.0,
+            ),
+            SizedBox(
+              height: 36.0,
+            ),
+            Container(
+              padding: const EdgeInsets.only(left: 24.0, right: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text("New Thing Added",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      )),
+                  SizedBox(
+                    height: 12.0,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 36.0,
+            ),
+            SizedBox(
+              height: 24,
+            ),
+          ],
+        ));
   }
 }
 
