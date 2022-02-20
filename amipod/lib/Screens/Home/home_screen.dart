@@ -11,6 +11,8 @@ import 'package:amipod/Screens/Home/components/add_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
+import 'components/add_panel.dart';
+
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
   @override
@@ -27,12 +29,13 @@ class _HomeState extends State<Home> {
   List<ConnectedContact> connectedContacts = [];
   List<UnconnectedContact> unconnectedContacts = [];
   List<Pod> allPods = [];
+  String addOptionSelected = '';
 
   List<List<String>> addOptions = [
     [],
-    ['New Connection', 'New Pod'],
-    ['New Event'],
-    ['New Reminder']
+    [newConnectionText, newPodText],
+    [newEventText],
+    [newReminderText]
   ];
   List<LatLng> testUSLocations = [
     LatLng(30.386308848515, -82.674663546642),
@@ -61,13 +64,21 @@ class _HomeState extends State<Home> {
 
   PanelController _pc = new PanelController();
 
-  void _onPanelOpened() {
-    print(_pc.isPanelOpen);
-    print('opening panel');
+  void _onPanelOpened(option) {
     _pc.open();
+    setState(() {
+      addOptionSelected = option;
+    });
+  }
+
+  void _closePanel() {
+    _pc.close();
   }
 
   void _onItemTapped(int index) {
+    if (_pc.isAttached & _pc.isPanelOpen) {
+      _closePanel();
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -86,12 +97,22 @@ class _HomeState extends State<Home> {
     });
   }
 
+  void _getAllPods(Map<String, Pod> podsCreated) {
+    if ((podsCreated.isEmpty & allPods.isEmpty) == false) {
+      setState(() {
+        allPods = allPods;
+      });
+    }
+  }
+
   bool _isAddButtonVisible = true;
   @override
   void initState() {
     pageList.add(HomeView(currentIndex: _selectedIndex));
     pageList.add(ConnectionsView(
-        currentIndex: _selectedIndex, getAllContacts: _getAllContacts));
+        currentIndex: _selectedIndex,
+        getAllContacts: _getAllContacts,
+        getAllPods: _getAllPods));
     pageList.add(EventsView(currentIndex: _selectedIndex));
     pageList.add(RemindersView(currentIndex: _selectedIndex));
 
@@ -235,97 +256,47 @@ class _HomeState extends State<Home> {
     return MediaQuery.removePadding(
         context: context,
         removeTop: true,
-        child: ListView(
-          padding: const EdgeInsets.only(left: 8.0),
-          controller: sc,
-          children: <Widget>[
-            SizedBox(
-              height: 12.0,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 30,
-                  height: 5,
-                  decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.all(Radius.circular(12.0))),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: 18.0,
-            ),
-            SizedBox(
-              height: 36.0,
-            ),
-            SizedBox(
-              height: 36.0,
-            ),
+        child: addPanelForm(sc, addOptionSelected));
+  }
+
+  Widget tagChip({
+    tagModel,
+    onTap,
+    action,
+  }) {
+    return InkWell(
+        onTap: onTap,
+        child: Stack(
+          children: [
             Container(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text("New Thing Added",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      )),
-                  SizedBox(
-                    height: 12.0,
-                  ),
-                ],
+              padding: EdgeInsets.symmetric(
+                vertical: 5.0,
+                horizontal: 5.0,
               ),
-            ),
-            SizedBox(
-              height: 36.0,
-            ),
-            SizedBox(
-              height: 24,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 10.0,
+                  vertical: 10.0,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  border: Border.all(
+                    color: tagModel
+                        .tagColor, //                   <--- border color
+                    width: 1.0,
+                  ),
+                  borderRadius: BorderRadius.circular(100.0),
+                ),
+                child: Text(
+                  '${tagModel.title}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15.0,
+                  ),
+                ),
+              ),
             ),
           ],
         ));
   }
-}
-
-Widget tagChip({
-  tagModel,
-  onTap,
-  action,
-}) {
-  return InkWell(
-      onTap: onTap,
-      child: Stack(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(
-              vertical: 5.0,
-              horizontal: 5.0,
-            ),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 10.0,
-                vertical: 10.0,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border.all(
-                  color:
-                      tagModel.tagColor, //                   <--- border color
-                  width: 1.0,
-                ),
-                borderRadius: BorderRadius.circular(100.0),
-              ),
-              child: Text(
-                '${tagModel.title}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15.0,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ));
 }

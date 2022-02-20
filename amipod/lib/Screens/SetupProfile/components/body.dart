@@ -4,6 +4,7 @@ import 'package:amipod/Screens/SetupProfile/components/background.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Body extends StatefulWidget {
   Body({Key? key}) : super(key: key);
@@ -13,33 +14,95 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
-  String _textInputValue =
-      ''; // TODO: Use geolocale of phone to determine country to replace the default value
+  String firstName = "";
+  String lastName = "";
+  final _profileFormKey = GlobalKey<FormState>();
+
+  void _onCreateProfile(BuildContext context) async {
+    // Obtain shared preferences.
+    final prefs = await SharedPreferences.getInstance();
+
+    print(firstName);
+    print(lastName);
+    // Save an String value to 'firstName' and 'lastName keys.
+    await prefs.setString(firstNameKey, firstName);
+    await prefs.setString(lastNameKey, lastName);
+  }
 
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
     return Background(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: <
+            Widget>[
+      Text("Your profile will be visible only to any connections you make.",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+
+      Form(
+        key: _profileFormKey,
         child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-          Text("Your profile will be visible only to any connections you make.",
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-          TextFormField(decoration: InputDecoration(labelText: "First Name")),
-          TextFormField(decoration: InputDecoration(labelText: "Last Name")),
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CreatePin()),
-              );
-              ;
-            },
-            child: Text('Create Profile'),
-            // TODO: Add style to button
-          ),
-        ]));
+          children: <Widget>[
+            TextFormField(
+              decoration: InputDecoration(labelText: "First Name"),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your first name';
+                }
+                return null;
+              },
+              onChanged: (value) {
+                setState(() {
+                  firstName = value;
+                });
+              },
+            ),
+            TextFormField(
+                decoration: InputDecoration(labelText: "Last Name"),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your first name';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  setState(() {
+                    lastName = value;
+                  });
+                }),
+            ElevatedButton(
+              onPressed: () {
+                // Validate returns true if the form is valid, or false otherwise.
+                if (_profileFormKey.currentState!.validate()) {
+                  // If the form is valid, display a snackbar. In the real world,
+                  // you'd often call a server or save the information in a database.
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Saving Name')),
+                  );
+                  _onCreateProfile(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CreatePin()),
+                  );
+                }
+              },
+              child: const Text('Create Profile'),
+            ),
+          ],
+        ),
+      ),
+
+      // TextButton(
+      //   onPressed: () {
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (context) => const CreatePin()),
+      //     );
+      //     ;
+      //   },
+      //   child: Text('Create Profile'),
+      //   // TODO: Add style to button
+      // ),
+    ]));
   }
 }
 

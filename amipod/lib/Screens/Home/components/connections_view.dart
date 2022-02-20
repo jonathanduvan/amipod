@@ -10,11 +10,12 @@ import 'package:amipod/Screens/Home/components/add_button.dart';
 class ConnectionsView extends StatefulWidget {
   final int currentIndex;
   final Function getAllContacts;
-
+  final Function getAllPods;
   const ConnectionsView({
     Key? key,
     required this.currentIndex,
     required this.getAllContacts,
+    required this.getAllPods,
   }) : super(key: key);
   @override
   _ConnectionsViewState createState() => _ConnectionsViewState();
@@ -25,6 +26,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   List<Contact> _contacts = [];
   List<ConnectedContact> connectedContacts = [];
   List<UnconnectedContact> unconnectedContacts = [];
+  Map<String, Pod> allPods = {};
 
   List<String> addOptions = ['New Connection', 'New Pod'];
 
@@ -38,6 +40,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   void initState() {
     super.initState();
     refreshContacts();
+    _getAllPods();
   }
 
   Future<void> refreshContacts() async {
@@ -113,8 +116,6 @@ class _ConnectionsViewState extends State<ConnectionsView> {
 
     var mapContacts = await _updateConnectedContacts(contacts);
 
-    print(mapContacts.connected!.length);
-    print(mapContacts.unconnected!.length);
     widget.getAllContacts(mapContacts);
 
     setState(() {
@@ -122,6 +123,12 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       connectedContacts = mapContacts.connected!;
       unconnectedContacts = mapContacts.unconnected!;
     });
+  }
+
+  void _getAllPods() {
+    // Here is the logic for getting pods a user created.
+
+    widget.getAllPods(allPods);
   }
 
   Widget build(BuildContext context) {
@@ -148,6 +155,44 @@ class _ConnectionsViewState extends State<ConnectionsView> {
             ),
           ],
         ),
+      ),
+      Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
+        SafeArea(
+          child: allPods.isNotEmpty
+              ? ListView.builder(
+                  scrollDirection: Axis.vertical,
+                  shrinkWrap: true,
+                  itemCount: allPods.keys.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    Pod c = allPods[allPods.keys.elementAt(index)]!;
+
+                    return Card(
+                      elevation: 6,
+                      margin: EdgeInsets.all(10),
+                      child: ListTile(
+                        onTap: () {},
+                        leading: (c.avatar != null && c.avatar?.isEmpty == true)
+                            ? CircleAvatar(
+                                backgroundImage: MemoryImage(c.avatar!))
+                            : CircleAvatar(child: Text(c.name[0])),
+                        title: Text(c.name),
+                      ),
+                    );
+                  },
+                )
+              : Center(
+                  child: Text(
+                    "No Pods to Display",
+                    style: TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12.0,
+                    ),
+                  ),
+                ),
+        ),
+      ]),
+      SizedBox(
+        height: 36.0,
       ),
       Padding(
         padding: const EdgeInsets.only(left: 8.0),
@@ -334,9 +379,7 @@ class _PermissionState extends State<PermissionWidget> {
     final status = await permission.request();
 
     setState(() {
-      print(status);
       _permissionStatus = status;
-      print(_permissionStatus);
     });
   }
 }

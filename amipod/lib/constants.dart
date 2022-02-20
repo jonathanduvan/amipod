@@ -6,6 +6,20 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 const primaryColor = Color(0xFF00563F);
 const backgroundColor = Color(0xFFFBFAFB);
 
+// Shared Preferences Keys
+const firstNameKey = 'first_name';
+const lastNameKey = 'last_name';
+
+// Secure Storage Keys
+const encryptionKeyName = 'encryption_key';
+const userPinKeyName = 'user_pin';
+const userPasswordKeyName = 'user_password';
+const podsStorageKeyName = 'pods_storage_key';
+const userPhoneNumberKeyName = 'user_phone_number';
+const connectionsStorageKeyName = 'connections_storage_key';
+const unconnectedContactsStorageKeyName = 'unconnected_contacts_storage_key';
+const idKeyName = 'id';
+
 class Country {
   final String country;
   final Double code;
@@ -266,18 +280,25 @@ var countryCodes = {
   "Mozambique": "258"
 };
 
+// Add Button Options
+const newConnectionText = 'New Connection';
+const newPodText = 'New Pod';
+
+const newEventText = 'New Event';
+const newReminderText = 'New Reminder';
+
 // Pod Objects
 
 class Pod {
   Pod(
       {required this.name,
+      required this.id,
       this.avatar,
-      required this.phone,
       this.connectedContacts,
       this.unconnectedContacts});
   String name;
+  String id;
   Uint8List? avatar;
-  String phone;
   List<ConnectedContact>? connectedContacts;
   List<UnconnectedContact>? unconnectedContacts;
 }
@@ -318,6 +339,8 @@ class ContactsMap {
   List<ConnectedContact>? connected;
   List<UnconnectedContact>? unconnected;
 }
+
+// Search Tags
 
 class TagModel {
   String id;

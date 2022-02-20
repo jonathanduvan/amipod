@@ -1,5 +1,6 @@
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // Permission widget containing information about the passed [Permission]
@@ -8,7 +9,7 @@ class AddButtonWidget extends StatefulWidget {
 
   final int currentIndex;
   final List<String> addButtonOptions;
-  final VoidCallback onAddPressed;
+  final ArgumentCallback onAddPressed;
   const AddButtonWidget(
       {Key? key,
       required this.currentIndex,
@@ -58,14 +59,15 @@ class _AddButtonWidgetState extends State<AddButtonWidget> {
     }
   }
 
-  Future<void> handleAddPress(int currentIndex, List addButtonOptions) async {}
-
   List<PopupMenuItem> setupOptions(List addButtonOptions) {
     var options = addButtonOptions
         .map((option) => PopupMenuItem(
-            child: Text('${option}'),
-            value: option,
-            onTap: widget.onAddPressed))
+              child: Text('${option}'),
+              value: option,
+              onTap: () {
+                widget.onAddPressed(option);
+              },
+            ))
         .toList();
 
     return (options);
