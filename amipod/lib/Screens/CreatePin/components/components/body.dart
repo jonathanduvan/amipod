@@ -32,10 +32,10 @@ class _BodyState extends State<Body> {
     encrypter.createEncryptionKey();
     print('current encrypt key');
     print(encrypter.encryptionKey.toString());
-    var encryptedPinNumber =
-        await encrypter.encryptData(userPinKeyName, pinNumber);
+    // var encryptedPinNumber =
+    //     await encrypter.encryptData(userPinKeyName, pinNumber);
 
-    print(encryptedPinNumber);
+    // print(encryptedPinNumber);
     // await storage.writeSecureData(userPinKeyName, encryptedPinNumber);
   }
 
