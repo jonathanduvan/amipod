@@ -9,6 +9,7 @@ const backgroundColor = Color(0xFFFBFAFB);
 // Shared Preferences Keys
 const firstNameKey = 'first_name';
 const lastNameKey = 'last_name';
+const LoggedInKey = 'logged_in';
 
 // Secure Storage Keys
 const encryptionKeyName = 'encryption_key';

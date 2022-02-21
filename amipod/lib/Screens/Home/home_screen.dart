@@ -3,12 +3,14 @@ import 'package:amipod/Screens/Home/components/events_view.dart';
 import 'package:amipod/Screens/Home/components/home_view.dart';
 import 'package:amipod/Screens/Home/components/reminders_view.dart';
 import 'package:amipod/Screens/Home/components/map.dart';
+import 'package:amipod/Screens/Login/login_screen.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:geocode/geocode.dart';
+// import 'package:geocode/geocode.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import 'components/add_panel.dart';
@@ -115,8 +117,25 @@ class _HomeState extends State<Home> {
         getAllPods: _getAllPods));
     pageList.add(EventsView(currentIndex: _selectedIndex));
     pageList.add(RemindersView(currentIndex: _selectedIndex));
-
+    updateSharedPreferences();
     super.initState();
+  }
+
+  void updateSharedPreferences() {
+    updateLoginState(true);
+  }
+
+  Future<bool> updateLoginState(bool login) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save an String value to 'firstName' and 'lastName keys.
+
+    if (login) {
+      await prefs.setBool(LoggedInKey, true);
+    } else {
+      await prefs.setBool(LoggedInKey, false);
+    }
+    return login;
   }
 
   bool onConnectionsPage(int index) {
@@ -143,15 +162,50 @@ class _HomeState extends State<Home> {
     _panelHeightOpen = MediaQuery.of(context).size.height * .80;
 
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          // Important: Remove any padding from the ListView.
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text('Drawer Header'),
+            ),
+            ListTile(
+              title: const Text('Profile'),
+              onTap: () {
+                // Update the state of the app.
+                // ...
+              },
+            ),
+            ListTile(
+              title: const Text('Logout'),
+              onTap: () {
+                updateLoginState(false).then((value) =>
+                    Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const Login()),
+                        ModalRoute.withName("/WelcomeScreen")));
+                // Update the state of the app.
+                // ...
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: AppBar(
         toolbarHeight: 100,
         automaticallyImplyLeading: false,
         backgroundColor: Colors.black87,
-        leading: IconButton(
-          icon: Icon(Icons.person),
-          onPressed: () {
-            /** Do something */
-          },
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: Icon(Icons.person),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
         ),
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50.0),

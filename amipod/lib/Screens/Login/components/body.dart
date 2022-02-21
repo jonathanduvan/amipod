@@ -23,6 +23,7 @@ class _BodyState extends State<Body> {
   SecureStorage storage = SecureStorage();
   late EncryptionManager encrypter;
   var currEncryptKey;
+  var pinCryptFormatHash;
 
   @override
   void initState() {
@@ -38,24 +39,32 @@ class _BodyState extends State<Body> {
     getEncryptionValues().then((result) {
       // If we need to rebuild the widget with the resulting data,
       // make sure to use `setState`
-      var encryptObject = EncryptionManager(encryptionString: result);
+
+      print(result[0]);
+      var currKey = result[0];
+      var pinhash = result[1];
+
+      var encryptObject = EncryptionManager(encryptionString: currKey);
+
       setState(() {
-        currEncryptKey = result;
+        currEncryptKey = currKey;
+        pinCryptFormatHash = pinhash;
         encrypter = encryptObject;
       });
     });
   }
 
-  Future<String> getEncryptionValues() async {
+  Future<List<String>> getEncryptionValues() async {
     var currKey = await storage.readSecureData(encryptionKeyName);
-    return currKey;
+    var pinHash = await storage.readSecureData(userPinKeyName);
+    List<String> encryptionValues = [currKey, pinHash];
+
+    return encryptionValues;
   }
 
-  void _onSubmitPinNumber(BuildContext context) async {
-    var keyAndPin = '$currEncryptKey:$pinNumber';
-    var encryptedPinNumber = encrypter.hashPassword(keyAndPin);
-
-    await storage.writeSecureData(userPinKeyName, encryptedPinNumber);
+  bool _checkPinNumber() {
+    var enteredPassword = '$currEncryptKey:$pinNumber';
+    return encrypter.isPasswordValid(pinCryptFormatHash, enteredPassword);
   }
 
   Widget build(BuildContext context) {
@@ -65,8 +74,7 @@ class _BodyState extends State<Body> {
         child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-          Text(
-              'Creating a PIN is required to restore your encrypted information, and can be used as a way to quickly log back in.'),
+          Text('Log in using your PIN.'),
           Form(
             key: _pinNumberFormKey,
             child: Column(
@@ -91,7 +99,16 @@ class _BodyState extends State<Body> {
                     if (value == null || value.isEmpty) {
                       return 'Please a valid pin';
                     }
-                    return null;
+                    if (value.length < 4) {
+                      return '';
+                    }
+                    var passCheck = _checkPinNumber();
+
+                    if (passCheck) {
+                      return null;
+                    } else {
+                      return 'Invalid pin. Please Type in your pin.';
+                    }
                   },
                   onChanged: (value) {
                     setState(() {
@@ -106,17 +123,17 @@ class _BodyState extends State<Body> {
                       // If the form is valid, display a snackbar. In the real world,
                       // you'd often call a server or save the information in a database.
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Processing Pin Number')),
+                        const SnackBar(content: Text('Logging in...')),
                       );
-                      _onSubmitPinNumber(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const Home()),
                       );
                     }
                   },
-                  child: const Text('Create Pin'),
+                  child: const Text('Login'),
                 ),
+                Text('Forgot your pin? Re-register here'),
               ],
             ),
           ),

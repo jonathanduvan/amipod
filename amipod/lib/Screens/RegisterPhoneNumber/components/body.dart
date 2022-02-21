@@ -98,18 +98,6 @@ class _BodyState extends State<Body> {
               },
               child: const Text('Send Verification Code'),
             ),
-            // TextButton(
-            //   onPressed: () {
-            //     _onSubmitPhoneNumber(context);
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //           builder: (context) => const ValidationCodeInput()),
-            //     );
-            //   },
-            //   child: Text('Send Verification Code'),
-            //   // TODO: Add style to button
-            // ),
           ],
         ),
       ),

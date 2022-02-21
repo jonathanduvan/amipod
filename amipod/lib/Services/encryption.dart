@@ -19,6 +19,10 @@ class EncryptionManager {
     return hashedPassword;
   }
 
+  bool isPasswordValid(String cryptFormatHash, String enteredPassword) {
+    return Crypt(cryptFormatHash).match(enteredPassword);
+  }
+
   encryptData(String encryptionType, String data) {
     var encryptionData = "$encryptionType:$data";
     final encrypter = Encrypter(AES(encryptionKey, mode: AESMode.cbc));
