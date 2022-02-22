@@ -50,8 +50,9 @@ class _BodyState extends State<Body> {
     return Background(
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: <
             Widget>[
-      Text("We'll text you a verification code. Carrier rates may apply.",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+      SizedBox(
+        height: 200,
+      ),
       CountryDropdown(
           dropdownValue: _dropdownValue,
           onChanged: _handleCountryDropdownChanged),
@@ -60,11 +61,21 @@ class _BodyState extends State<Body> {
         child: Column(
           children: <Widget>[
             TextFormField(
+              style: TextStyle(color: Colors.white),
+              cursorColor: primaryColor,
               keyboardType: TextInputType.number,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
               ],
-              decoration: InputDecoration(labelText: "Phone Number"),
+              decoration: InputDecoration(
+                  labelText: "Phone Number",
+                  focusColor: primaryColor,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: primaryColor))),
               onChanged: (value) {
                 setState(() {
                   phoneNumber = value;
@@ -79,25 +90,47 @@ class _BodyState extends State<Body> {
                 return null;
               },
             ),
-            ElevatedButton(
-              onPressed: () {
-                // Validate returns true if the form is valid, or false otherwise.
-                if (_RegisterPhoneFormKey.currentState!.validate()) {
-                  // If the form is valid, display a snackbar. In the real world,
-                  // you'd often call a server or save the information in a database.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Processing Phone Number')),
-                  );
-                  _onSubmitPhoneNumber(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const ValidationCodeInput()),
-                  );
-                }
-              },
-              child: const Text('Send Verification Code'),
+            SizedBox(
+              height: 50,
             ),
+            Text("We'll text you a verification code. Carrier rates may apply.",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, color: primaryColor)),
+            SizedBox(
+              height: 300,
+            ),
+            SizedBox(
+              width: size.width - 100,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: primaryColor,
+                ),
+                onPressed: () {
+                  // Validate returns true if the form is valid, or false otherwise.
+                  if (_RegisterPhoneFormKey.currentState!.validate()) {
+                    // If the form is valid, display a snackbar. In the real world,
+                    // you'd often call a server or save the information in a database.
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Processing Phone Number')),
+                    );
+                    _onSubmitPhoneNumber(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ValidationCodeInput()),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Send Verification Code',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20),
+                ),
+              ),
+            )
           ],
         ),
       ),
@@ -124,12 +157,15 @@ class CountryDropdown extends StatelessWidget {
     return DropdownButton<String>(
       value: dropdownValue,
       alignment: Alignment.center,
-      icon: const Icon(Icons.arrow_downward),
+      icon: const Icon(
+        Icons.arrow_downward,
+        color: dipityPurple,
+      ),
       elevation: 16,
-      style: const TextStyle(color: Colors.deepPurple),
+      style: const TextStyle(color: Colors.white),
       underline: Container(
         height: 2,
-        color: Colors.deepPurpleAccent,
+        color: dipityPurple,
       ),
       onChanged: (String? newValue) {
         handleDropdownChange(newValue!);

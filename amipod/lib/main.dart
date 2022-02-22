@@ -68,8 +68,7 @@ class MyApp extends StatelessWidget {
       title: 'Amipod',
       theme: ThemeData(
           primaryColor: primaryColor, scaffoldBackgroundColor: backgroundColor),
-      home:
-          SplashScreen(), // TODO: Add check for if user has an account and has logged in on the phone before
+      home: SplashScreen(),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 
 class Background extends StatelessWidget {
@@ -14,8 +15,21 @@ class Background extends StatelessWidget {
         height: size.height,
         width: double.infinity,
         child: Stack(alignment: Alignment.topCenter, children: <Widget>[
-          Positioned(
-              child: Text('Welcome Text to be replaced with Icon and blurb')),
+          Padding(
+            padding: const EdgeInsets.only(top: 70.0, left: 0.0),
+            child: Text("Dipity",
+                style: TextStyle(
+                    fontWeight: FontWeight.w200,
+                    color: Colors.white,
+                    fontSize: 40)),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 150.0),
+            child: Image.asset(
+              "assets/images/dipity_diego.png",
+              scale: 4,
+            ),
+          ),
           child,
         ]));
   }

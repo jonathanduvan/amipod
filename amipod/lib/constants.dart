@@ -3,9 +3,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-const primaryColor = Color(0xFF00563F);
-const backgroundColor = Color(0xFFFBFAFB);
-
+const primaryColor = Color(0xFF1DD3B0);
+const backgroundColor = Color(0xFF003E1F);
+const dipityPurple = Color(0xFF7E2E84);
 // Shared Preferences Keys
 const firstNameKey = 'first_name';
 const lastNameKey = 'last_name';
