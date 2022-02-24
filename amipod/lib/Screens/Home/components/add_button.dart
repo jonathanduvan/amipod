@@ -81,7 +81,7 @@ class _AddButtonWidgetState extends State<AddButtonWidget> {
         child: Container(
           padding: EdgeInsets.all(15),
           decoration: ShapeDecoration(
-            color: Colors.lightBlue,
+            color: primaryColor,
             shape: CircleBorder(),
           ),
           child: Icon(Icons.add, color: backgroundColor, size: 30),

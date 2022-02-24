@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void navigateUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    var status = prefs.getBool(LoggedInKey)!;
+    var status = prefs.getBool(LoggedInKey) ?? false;
     print(status);
     if (status) {
       Navigator.pushReplacement(

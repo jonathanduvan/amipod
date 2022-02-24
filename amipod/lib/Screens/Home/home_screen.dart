@@ -1,17 +1,25 @@
+import 'dart:convert';
+
 import 'package:amipod/Screens/Home/components/connections_view.dart';
 import 'package:amipod/Screens/Home/components/events_view.dart';
 import 'package:amipod/Screens/Home/components/home_view.dart';
 import 'package:amipod/Screens/Home/components/reminders_view.dart';
 import 'package:amipod/Screens/Home/components/map.dart';
 import 'package:amipod/Screens/Login/login_screen.dart';
+import 'package:amipod/Services/encryption.dart';
+import 'package:amipod/Services/hive_api.dart';
+import 'package:amipod/Services/secure_storage.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 // import 'package:geocode/geocode.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:hive/hive.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
+import 'package:uuid/uuid.dart';
 
 import 'components/add_panel.dart';
 
@@ -66,6 +74,107 @@ class _HomeState extends State<Home> {
 
   PanelController _pc = new PanelController();
 
+  SecureStorage storage = SecureStorage();
+  late EncryptionManager encrypter;
+
+  HiveAPI hiveApi = HiveAPI();
+
+  late Box connectionsBox;
+  late Box contactsBox;
+  late Box podsBox;
+
+  void checkUserStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, String> allValues = await storage.readAllSecureData();
+    var currEncryptKey = allValues[encryptionKeyName]!;
+    var userPhone = allValues[userPhoneNumberKeyName];
+
+    EncryptionManager encrypter =
+        EncryptionManager(encryptionString: currEncryptKey);
+
+    var userId;
+
+    String encryptContactsKey;
+    String encryptConnectsKey;
+    String encryptPodsKey;
+
+    Box tempContactsBox;
+    Box tempConnectionsBox;
+    Box tempPodsBox;
+
+    // Check status of user Id
+    if (allValues[idKeyName] == null) {
+      var userRawId = 'dipity_userid:$userPhone';
+      userId = encrypter.encryptData(idKeyName, userRawId);
+      await storage.writeSecureData(idKeyName, userId);
+    } else {
+      userId = allValues[idKeyName];
+    }
+
+    // Check status of Contacts Hive Box
+    if (allValues[unconnectedContactsStorageKeyName] == null) {
+      final contactsKey = Hive.generateSecureKey();
+      encryptContactsKey = base64UrlEncode(contactsKey);
+
+      await storage.writeSecureData(
+          unconnectedContactsStorageKeyName, encryptContactsKey);
+      tempContactsBox = await hiveApi.createContactsBox(contactsKey);
+    } else {}
+
+    // Check status of Connections Hive Box
+    if (allValues[connectionsStorageKeyName] == null) {
+      final connectionsKey = Hive.generateSecureKey();
+      encryptConnectsKey = base64UrlEncode(connectionsKey);
+      await storage.writeSecureData(
+          connectionsStorageKeyName, base64UrlEncode(connectionsKey));
+
+      hiveApi.createConnectionsBox(connectionsKey);
+    } else {}
+
+    // Check status of Pods Hive Box
+    if (allValues[podsStorageKeyName] == null) {
+      final podsKey = Hive.generateSecureKey();
+      await storage.writeSecureData(
+          podsStorageKeyName, base64UrlEncode(podsKey));
+    } else {}
+  }
+
+  Future<void> _askPermissions() async {
+    PermissionStatus permissionStatus = await _getLocationPermission();
+    if (permissionStatus == PermissionStatus.granted) {
+    } else {
+      _handleInvalidPermissions(permissionStatus);
+    }
+  }
+
+  void _handleInvalidPermissions(PermissionStatus permissionStatus) {
+    if (permissionStatus == PermissionStatus.denied) {
+      final snackBar = SnackBar(content: Text('Access to contact data denied'));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } else if (permissionStatus == PermissionStatus.permanentlyDenied) {
+      final snackBar = SnackBar(
+          content: Text(
+              'Location permission denied. Please open the Settings app to allow access.'));
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }
+  }
+
+  Future<PermissionStatus> _getLocationPermission() async {
+    PermissionStatus permission = await Permission.location.status;
+    print(permission == PermissionStatus.denied);
+    if (permission == PermissionStatus.denied) {
+      PermissionStatus permissionStatus = await Permission.location.request();
+      return permissionStatus;
+    }
+    if (permission != PermissionStatus.granted &&
+        permission != PermissionStatus.permanentlyDenied) {
+      PermissionStatus permissionStatus = await Permission.location.request();
+      return permissionStatus;
+    } else {
+      return permission;
+    }
+  }
+
   void _onPanelOpened(option) {
     _pc.open();
     setState(() {
@@ -119,6 +228,7 @@ class _HomeState extends State<Home> {
     pageList.add(RemindersView(currentIndex: _selectedIndex));
     updateSharedPreferences();
     super.initState();
+    _askPermissions();
   }
 
   void updateSharedPreferences() {
@@ -162,6 +272,7 @@ class _HomeState extends State<Home> {
     _panelHeightOpen = MediaQuery.of(context).size.height * .80;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       drawer: Drawer(
         child: ListView(
           // Important: Remove any padding from the ListView.
@@ -198,7 +309,7 @@ class _HomeState extends State<Home> {
       appBar: AppBar(
         toolbarHeight: 100,
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.black87,
+        backgroundColor: backgroundColor,
         leading: Builder(
           builder: (context) => IconButton(
             icon: Icon(Icons.person),
@@ -282,25 +393,30 @@ class _HomeState extends State<Home> {
           : BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
+                  backgroundColor: backgroundColor,
                   icon: Icon(Icons.home),
                   label: 'Home',
                 ),
                 BottomNavigationBarItem(
+                  backgroundColor: backgroundColor,
                   icon: Icon(Icons.people),
                   label: 'Connections',
                 ),
                 BottomNavigationBarItem(
+                  backgroundColor: backgroundColor,
                   icon: Icon(Icons.calendar_today),
                   label: 'Events',
                 ),
                 BottomNavigationBarItem(
+                  backgroundColor: backgroundColor,
                   icon: Icon(Icons.alarm),
                   label: 'Reminders',
                 ),
               ],
-              unselectedItemColor: Colors.black,
+              unselectedItemColor: Colors.white,
+              backgroundColor: backgroundColor,
               currentIndex: _selectedIndex,
-              selectedItemColor: Colors.amber[800],
+              selectedItemColor: primaryColor,
               onTap: _onItemTapped,
             ),
     );

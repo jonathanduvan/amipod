@@ -23,7 +23,6 @@ class _RemindersViewState extends State<RemindersView> {
 
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
-    print('got contacts');
     var contacts = (await ContactsService.getContacts());
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          ;
@@ -32,9 +31,8 @@ class _RemindersViewState extends State<RemindersView> {
     });
 
     // Lazy load thumbnails after rendering initial contacts.
-    for (final contact in contacts) {
-      print(contact.displayName);
-    }
+    // for (final contact in contacts) {
+    // }
   }
 
   Widget build(BuildContext context) {
