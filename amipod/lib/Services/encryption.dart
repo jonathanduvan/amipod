@@ -1,17 +1,21 @@
+import 'dart:convert';
+
 import 'package:crypt/crypt.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:amipod/Services/secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EncryptionManager {
   SecureStorage storage = SecureStorage();
-  final String encryptionString;
-  final iv = IV.fromLength(16);
   late Key encryptionKey;
+  late IV iv;
 
-  EncryptionManager({required this.encryptionString});
+  final String _privateIV = 'privateIV';
+  final String _privateKey = 'privateKey';
 
-  createEncryptionKey() {
-    encryptionKey = Key.fromUtf8(encryptionString);
+  EncryptionManager() {
+    encryptionKey = Key.fromUtf8(dotenv.env[_privateKey] ?? '');
+    iv = IV.fromUtf8(utf8.decode((dotenv.env[_privateIV] ?? '').codeUnits));
   }
 
   hashPassword(String password) {
@@ -23,10 +27,16 @@ class EncryptionManager {
     return Crypt(cryptFormatHash).match(enteredPassword);
   }
 
-  encryptData(String encryptionType, String data) {
-    var encryptionData = "$encryptionType:$data";
-    final encrypter = Encrypter(AES(encryptionKey, mode: AESMode.cbc));
-    final encrypted = encrypter.encrypt(encryptionData, iv: iv);
+  encryptData(String data) {
+    print("data: $data");
+    print("iv: $iv");
+    print("key: $encryptionKey");
+
+    final encrypter = Encrypter(AES(encryptionKey));
+    final encrypted = encrypter.encrypt(
+      data,
+      iv: iv,
+    );
     return encrypted.base64;
   }
 

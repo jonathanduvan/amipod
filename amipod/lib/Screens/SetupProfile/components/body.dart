@@ -33,76 +33,126 @@ class _BodyState extends State<Body> {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
     return Background(
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: <
-            Widget>[
-      Text("Your profile will be visible only to any connections you make.",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-
-      Form(
-        key: _profileFormKey,
         child: Column(
-          children: <Widget>[
-            TextFormField(
-              decoration: InputDecoration(labelText: "First Name"),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your first name';
-                }
-                return null;
-              },
-              onChanged: (value) {
-                setState(() {
-                  firstName = value;
-                });
-              },
-            ),
-            TextFormField(
-                decoration: InputDecoration(labelText: "Last Name"),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your first name';
-                  }
-                  return null;
-                },
-                onChanged: (value) {
-                  setState(() {
-                    lastName = value;
-                  });
-                }),
-            ElevatedButton(
-              onPressed: () {
-                // Validate returns true if the form is valid, or false otherwise.
-                if (_profileFormKey.currentState!.validate()) {
-                  // If the form is valid, display a snackbar. In the real world,
-                  // you'd often call a server or save the information in a database.
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Saving Name')),
-                  );
-                  _onCreateProfile(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CreatePin()),
-                  );
-                }
-              },
-              child: const Text('Create Profile'),
-            ),
-          ],
-        ),
-      ),
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+          SizedBox(
+            height: 150,
+          ),
+          Text("Your profile will be visible only to any connections you make.",
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
 
-      // TextButton(
-      //   onPressed: () {
-      //     Navigator.push(
-      //       context,
-      //       MaterialPageRoute(builder: (context) => const CreatePin()),
-      //     );
-      //     ;
-      //   },
-      //   child: Text('Create Profile'),
-      //   // TODO: Add style to button
-      // ),
-    ]));
+          Form(
+            key: _profileFormKey,
+            child: Column(
+              children: <Widget>[
+                SizedBox(height: 100),
+                TextFormField(
+                  style: TextStyle(color: primaryColor, fontSize: 20),
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                      labelText: "First Name",
+                      focusColor: primaryColor,
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor)),
+                      disabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor)),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white)),
+                      border: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor))),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your first name';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      firstName = value;
+                    });
+                  },
+                ),
+                SizedBox(height: 20),
+                TextFormField(
+                    style: TextStyle(color: primaryColor, fontSize: 20),
+                    cursorColor: Colors.white,
+                    decoration: InputDecoration(
+                        labelText: "Last Name",
+                        focusColor: primaryColor,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: primaryColor)),
+                        disabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: primaryColor)),
+                        focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white)),
+                        border: OutlineInputBorder(
+                            borderSide: BorderSide(color: primaryColor))),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your first name';
+                      }
+                      return null;
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        lastName = value;
+                      });
+                    }),
+                SizedBox(height: 300),
+                SizedBox(
+                  width: size.width - 100,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(primary: primaryColor),
+                    onPressed: () {
+                      // Validate returns true if the form is valid, or false otherwise.
+                      if (_profileFormKey.currentState!.validate()) {
+                        // If the form is valid, display a snackbar. In the real world,
+                        // you'd often call a server or save the information in a database.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Saving Name')),
+                        );
+                        _onCreateProfile(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const CreatePin()),
+                        );
+                      }
+                    },
+                    child: const Text('Create Profile',
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20)),
+                  ),
+                )
+              ],
+            ),
+          ),
+
+          // TextButton(
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const CreatePin()),
+          //     );
+          //     ;
+          //   },
+          //   child: Text('Create Profile'),
+          //   // TODO: Add style to button
+          // ),
+        ]));
   }
 }
 

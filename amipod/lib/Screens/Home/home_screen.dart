@@ -1,5 +1,6 @@
-import 'dart:convert';
-
+import 'dart:convert' show base64Url, base64UrlEncode;
+import 'package:amipod/HiveModels/contact_model.dart';
+import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Screens/Home/components/connections_view.dart';
 import 'package:amipod/Screens/Home/components/events_view.dart';
 import 'package:amipod/Screens/Home/components/home_view.dart';
@@ -36,9 +37,16 @@ class _HomeState extends State<Home> {
   List<Widget> pageList = [];
   List<Contact> allContacts = [];
   List<LatLng> allContactLocations = []; // Will need to be a widget later
+
   List<ConnectedContact> connectedContacts = [];
+  List<ContactModel> connections = [];
+
   List<UnconnectedContact> unconnectedContacts = [];
+  List<ContactModel> contacts = [];
+
   List<Pod> allPods = [];
+  List<PodModel> pods = [];
+
   String addOptionSelected = '';
 
   List<List<String>> addOptions = [
@@ -75,7 +83,7 @@ class _HomeState extends State<Home> {
   PanelController _pc = new PanelController();
 
   SecureStorage storage = SecureStorage();
-  late EncryptionManager encrypter;
+  EncryptionManager encrypter = EncryptionManager();
 
   HiveAPI hiveApi = HiveAPI();
 
@@ -83,29 +91,29 @@ class _HomeState extends State<Home> {
   late Box contactsBox;
   late Box podsBox;
 
+  bool _isAddButtonVisible = true;
+
   void checkUserStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, String> allValues = await storage.readAllSecureData();
-    var currEncryptKey = allValues[encryptionKeyName]!;
     var userPhone = allValues[userPhoneNumberKeyName];
-
-    EncryptionManager encrypter =
-        EncryptionManager(encryptionString: currEncryptKey);
 
     var userId;
 
     String encryptContactsKey;
-    String encryptConnectsKey;
+    String encryptConnectionsKey;
     String encryptPodsKey;
+    String encryptRemindersKey;
 
     Box tempContactsBox;
     Box tempConnectionsBox;
     Box tempPodsBox;
+    Box tempRemindersBox;
 
     // Check status of user Id
     if (allValues[idKeyName] == null) {
       var userRawId = 'dipity_userid:$userPhone';
-      userId = encrypter.encryptData(idKeyName, userRawId);
+      userId = encrypter.encryptData(userRawId);
       await storage.writeSecureData(idKeyName, userId);
     } else {
       userId = allValues[idKeyName];
@@ -113,30 +121,53 @@ class _HomeState extends State<Home> {
 
     // Check status of Contacts Hive Box
     if (allValues[unconnectedContactsStorageKeyName] == null) {
-      final contactsKey = Hive.generateSecureKey();
+      var contactsKey = Hive.generateSecureKey();
       encryptContactsKey = base64UrlEncode(contactsKey);
 
       await storage.writeSecureData(
           unconnectedContactsStorageKeyName, encryptContactsKey);
+
       tempContactsBox = await hiveApi.createContactsBox(contactsKey);
-    } else {}
+    } else {
+      encryptContactsKey = allValues[unconnectedContactsStorageKeyName]!;
+      tempContactsBox = hiveApi.openContactsBox();
+    }
 
     // Check status of Connections Hive Box
     if (allValues[connectionsStorageKeyName] == null) {
-      final connectionsKey = Hive.generateSecureKey();
-      encryptConnectsKey = base64UrlEncode(connectionsKey);
-      await storage.writeSecureData(
-          connectionsStorageKeyName, base64UrlEncode(connectionsKey));
+      var connectionsKey = Hive.generateSecureKey();
+      encryptConnectionsKey = base64UrlEncode(connectionsKey);
 
-      hiveApi.createConnectionsBox(connectionsKey);
-    } else {}
+      await storage.writeSecureData(
+          connectionsStorageKeyName, encryptConnectionsKey);
+
+      tempConnectionsBox = await hiveApi.createConnectionsBox(connectionsKey);
+    } else {
+      encryptConnectionsKey = allValues[connectionsStorageKeyName]!;
+      tempConnectionsBox = hiveApi.openConnectionsBox();
+    }
 
     // Check status of Pods Hive Box
     if (allValues[podsStorageKeyName] == null) {
-      final podsKey = Hive.generateSecureKey();
-      await storage.writeSecureData(
-          podsStorageKeyName, base64UrlEncode(podsKey));
-    } else {}
+      var podsKey = Hive.generateSecureKey();
+      encryptPodsKey = base64UrlEncode(podsKey);
+
+      await storage.writeSecureData(podsStorageKeyName, encryptPodsKey);
+
+      tempPodsBox = await hiveApi.createPodBox(podsKey);
+    } else {
+      encryptPodsKey = allValues[podsStorageKeyName]!;
+      tempPodsBox = hiveApi.openPodsBox();
+    }
+
+    setState(() {
+      connectionsBox = tempConnectionsBox;
+      contactsBox = tempContactsBox;
+      podsBox = tempPodsBox;
+      // remindersBox = tempRemindersBox;
+    });
+
+    addPageLists();
   }
 
   Future<void> _askPermissions() async {
@@ -161,7 +192,6 @@ class _HomeState extends State<Home> {
 
   Future<PermissionStatus> _getLocationPermission() async {
     PermissionStatus permission = await Permission.location.status;
-    print(permission == PermissionStatus.denied);
     if (permission == PermissionStatus.denied) {
       PermissionStatus permissionStatus = await Permission.location.request();
       return permissionStatus;
@@ -206,6 +236,8 @@ class _HomeState extends State<Home> {
       connectedContacts = mapContacts.connected!;
       unconnectedContacts = mapContacts.unconnected!;
     });
+
+    updateContacts();
   }
 
   void _getAllPods(Map<String, Pod> podsCreated) {
@@ -216,17 +248,24 @@ class _HomeState extends State<Home> {
     }
   }
 
-  bool _isAddButtonVisible = true;
-  @override
-  void initState() {
+  void addPageLists() {
     pageList.add(HomeView(currentIndex: _selectedIndex));
     pageList.add(ConnectionsView(
-        currentIndex: _selectedIndex,
-        getAllContacts: _getAllContacts,
-        getAllPods: _getAllPods));
+      currentIndex: _selectedIndex,
+      getAllContacts: _getAllContacts,
+      getAllPods: _getAllPods,
+      contactsBox: contactsBox,
+      connectionsBox: connectionsBox,
+      podsBox: podsBox,
+    ));
     pageList.add(EventsView(currentIndex: _selectedIndex));
     pageList.add(RemindersView(currentIndex: _selectedIndex));
+  }
+
+  @override
+  void initState() {
     updateSharedPreferences();
+    checkUserStatus();
     super.initState();
     _askPermissions();
   }
@@ -268,6 +307,21 @@ class _HomeState extends State<Home> {
     });
   }
 
+  void updateContacts() {
+    if (contactsBox.isEmpty) {
+      addAllContacts();
+    } else {
+      hiveApi.addMissingContacts(
+          encrypter, contactsBox, connectionsBox, unconnectedContacts);
+    }
+  }
+
+  void addAllContacts() {
+    for (var element in unconnectedContacts) {
+      hiveApi.createAndAddContact(encrypter, contactsBox, element);
+    }
+  }
+
   Widget build(BuildContext context) {
     _panelHeightOpen = MediaQuery.of(context).size.height * .80;
 
@@ -294,6 +348,7 @@ class _HomeState extends State<Home> {
             ListTile(
               title: const Text('Logout'),
               onTap: () {
+                Hive.close();
                 updateLoginState(false).then((value) =>
                     Navigator.pushAndRemoveUntil(
                         context,

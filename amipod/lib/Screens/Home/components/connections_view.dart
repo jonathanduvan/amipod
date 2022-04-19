@@ -1,8 +1,10 @@
+import 'package:amipod/Services/hive_api.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Home/components/background.dart';
 import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
@@ -11,11 +13,19 @@ class ConnectionsView extends StatefulWidget {
   final int currentIndex;
   final Function getAllContacts;
   final Function getAllPods;
+
+  final Box contactsBox;
+  final Box connectionsBox;
+  final Box podsBox;
+
   const ConnectionsView({
     Key? key,
     required this.currentIndex,
     required this.getAllContacts,
     required this.getAllPods,
+    required this.contactsBox,
+    required this.connectionsBox,
+    required this.podsBox,
   }) : super(key: key);
   @override
   _ConnectionsViewState createState() => _ConnectionsViewState();
@@ -23,10 +33,17 @@ class ConnectionsView extends StatefulWidget {
 
 class _ConnectionsViewState extends State<ConnectionsView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
-  List<Contact> _contacts = [];
+
   List<ConnectedContact> connectedContacts = [];
   List<UnconnectedContact> unconnectedContacts = [];
+
+  Iterable<dynamic> hiveContacts = [];
+  Iterable<dynamic> hiveConnections = [];
+  Iterable<dynamic> hivePods = [];
+
   Map<String, Pod> allPods = {};
+
+  HiveAPI hiveApi = HiveAPI();
 
   List<String> addOptions = ['New Connection', 'New Pod'];
 
@@ -39,6 +56,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   @override
   void initState() {
     super.initState();
+    print('initializing conn page');
     refreshContacts();
     _getAllPods();
   }
@@ -48,6 +66,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     var contacts = (await ContactsService.getContacts());
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          ;
+
     if (contacts != null) {
       _getAllContacts(contacts);
     }
@@ -111,24 +130,33 @@ class _ConnectionsViewState extends State<ConnectionsView> {
 
   void _getAllContacts(List<Contact> contacts) async {
     // Lazy load thumbnails after rendering initial contacts.
-
     //TODO: Function to check if contact is connected or not goes here
-
     var mapContacts = await _updateConnectedContacts(contacts);
-
     widget.getAllContacts(mapContacts);
 
+    var hiveCons = hiveApi.getAllContacts(widget.contactsBox);
+    var hiveConnects = hiveApi.getAllConnections(widget.connectionsBox);
+
     setState(() {
-      _contacts = contacts;
       connectedContacts = mapContacts.connected!;
       unconnectedContacts = mapContacts.unconnected!;
+      hiveContacts = hiveCons;
+      hiveConnections = hiveConnects;
     });
   }
 
   void _getAllPods() {
     // Here is the logic for getting pods a user created.
-
+    var hivePods = hiveApi.getAllPods(widget.podsBox);
     widget.getAllPods(allPods);
+
+    setState(() {
+      hivePods = hivePods;
+    });
+  }
+
+  bool checkContactsList() {
+    return hiveContacts.isNotEmpty;
   }
 
   Widget build(BuildContext context) {
@@ -158,7 +186,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: allPods.isNotEmpty
+          child: hivePods.isNotEmpty
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
@@ -211,7 +239,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: connectedContacts != null
+          child: hiveConnections.isNotEmpty
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
@@ -258,7 +286,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: unconnectedContacts != null
+          child: checkContactsList()
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,

@@ -4,9 +4,17 @@ import 'package:amipod/Screens/Login/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Welcome/welcome_screen.dart';
 import 'package:amipod/constants.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+import 'Services/secure_storage.dart';
+
+Future<void> main() async {
+  await Hive.initFlutter();
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -46,6 +54,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void navigateUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    FlutterSecureStorage storage = FlutterSecureStorage();
+    await storage.deleteAll();
+
     var status = prefs.getBool(LoggedInKey) ?? false;
     print(status);
     if (status) {

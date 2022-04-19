@@ -12,14 +12,16 @@ const lastNameKey = 'last_name';
 const LoggedInKey = 'logged_in';
 
 // Secure Storage Keys
+const idKeyName = 'id';
 const encryptionKeyName = 'encryption_key';
+const IVKeyName = 'iv_key';
 const userPinKeyName = 'user_pin';
 const userPasswordKeyName = 'user_password';
-const podsStorageKeyName = 'pods_storage_key';
 const userPhoneNumberKeyName = 'user_phone_number';
+
+const podsStorageKeyName = 'pods_storage_key';
 const connectionsStorageKeyName = 'connections_storage_key';
 const unconnectedContactsStorageKeyName = 'unconnected_contacts_storage_key';
-const idKeyName = 'id';
 
 class Country {
   final String country;

@@ -25,50 +25,73 @@ class _BodyState extends State<Body> {
         child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-          PinCodeTextField(
-            appContext: context,
-            length: 6,
-            obscureText: false,
-            animationType: AnimationType.fade,
-            pinTheme: PinTheme(
-              shape: PinCodeFieldShape.box,
-              borderRadius: BorderRadius.circular(5),
-              fieldHeight: 50,
-              fieldWidth: 40,
-              activeFillColor: Colors.white,
+          SizedBox(
+            height: 150,
+          ),
+          Text(
+              "Enter the code we sent to: *this is a placeholder for a phone nbr.",
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          SizedBox(
+            height: 25,
+          ),
+          SizedBox(
+              width: size.width - 50,
+              child: PinCodeTextField(
+                appContext: context,
+                length: 6,
+                obscureText: false,
+                animationType: AnimationType.fade,
+                pinTheme: PinTheme(
+                    shape: PinCodeFieldShape.box,
+                    borderRadius: BorderRadius.circular(5),
+                    fieldHeight: 50,
+                    fieldWidth: 40,
+                    activeColor: primaryColor,
+                    activeFillColor: primaryColor,
+                    inactiveColor: Colors.white,
+                    inactiveFillColor: Colors.white),
+                animationDuration: Duration(milliseconds: 300),
+                enableActiveFill: true,
+                controller: textEditingController,
+                onCompleted: (v) {
+                  print("Completed");
+                },
+                onChanged: (value) {
+                  print(value);
+                  setState(() {
+                    currentText = value;
+                  });
+                },
+                beforeTextPaste: (text) {
+                  print("Allowing to paste $text");
+                  //if you return true then it will show the paste confirmation dialog. Otherwise if false, then nothing will happen.
+                  //but you can show anything you want here, like your pop up saying wrong paste format or etc
+                  return true;
+                },
+              )),
+          SizedBox(height: 300),
+          SizedBox(
+            width: size.width - 100,
+            height: 50,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(primary: primaryColor),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SetupProfileScreen()),
+                );
+                ;
+              },
+              child: Text('Verify',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20)),
+              // TODO: Add style to button
             ),
-            animationDuration: Duration(milliseconds: 300),
-            backgroundColor: Colors.blue.shade50,
-            enableActiveFill: true,
-            controller: textEditingController,
-            onCompleted: (v) {
-              print("Completed");
-            },
-            onChanged: (value) {
-              print(value);
-              setState(() {
-                currentText = value;
-              });
-            },
-            beforeTextPaste: (text) {
-              print("Allowing to paste $text");
-              //if you return true then it will show the paste confirmation dialog. Otherwise if false, then nothing will happen.
-              //but you can show anything you want here, like your pop up saying wrong paste format or etc
-              return true;
-            },
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const SetupProfileScreen()),
-              );
-              ;
-            },
-            child: Text('Verify'),
-            // TODO: Add style to button
-          ),
+          )
         ]));
   }
 }

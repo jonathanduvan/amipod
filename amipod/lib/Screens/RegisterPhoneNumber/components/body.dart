@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'package:amipod/Screens/ValidationCodeInput/components/validation_code_input_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/RegisterPhoneNumber/components/background.dart';
@@ -21,6 +20,8 @@ class _BodyState extends State<Body> {
   String phoneNumber = "";
   SecureStorage storage = SecureStorage();
 
+  final _mobileFormatter = NumberTextInputFormatter();
+
   final _RegisterPhoneFormKey = GlobalKey<FormState>();
 
   void _handleCountryDropdownChanged(String newValue) {
@@ -32,15 +33,20 @@ class _BodyState extends State<Body> {
   void _onSubmitPhoneNumber(BuildContext context) async {
     var uuid = Uuid();
     var currEncryptKey = await storage.readSecureData(encryptionKeyName);
+    var currIVKey = await storage.readSecureData(IVKeyName);
     var countryCode = countryCodes[_dropdownValue];
     var fullNumber = '+$countryCode$phoneNumber';
-    print(fullNumber);
+
     // Handle creating encryption key if null
     if (currEncryptKey == null) {
-      print('new encryption string');
       var newEncyptKey = uuid.v1();
       await storage.writeSecureData(encryptionKeyName, newEncyptKey);
     }
+    // // Handle creating IV key if null
+    // if (currIVKey == null) {
+    //   var currIVKey = IV.fromLength(16);
+    //   await storage.writeSecureData(currIVKey, currIVKey);
+    // }
     await storage.writeSecureData(userPhoneNumberKeyName, phoneNumber);
   }
 
@@ -56,46 +62,60 @@ class _BodyState extends State<Body> {
       CountryDropdown(
           dropdownValue: _dropdownValue,
           onChanged: _handleCountryDropdownChanged),
+      SizedBox(
+        height: 25,
+      ),
       Form(
         key: _RegisterPhoneFormKey,
         child: Column(
           children: <Widget>[
-            TextFormField(
-              style: TextStyle(color: Colors.white),
-              cursorColor: primaryColor,
-              keyboardType: TextInputType.number,
-              inputFormatters: <TextInputFormatter>[
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-              ],
-              decoration: InputDecoration(
-                  labelText: "Phone Number",
-                  focusColor: primaryColor,
-                  labelStyle: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: primaryColor))),
-              onChanged: (value) {
-                setState(() {
-                  phoneNumber = value;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your phone number';
-                } else if (value.length != 10) {
-                  return 'Please enter a valid phone number';
-                }
-                return null;
-              },
-            ),
+            SizedBox(
+                width: size.width - 100,
+                child: TextFormField(
+                  style: TextStyle(color: primaryColor, fontSize: 20),
+                  cursorColor: Colors.white,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                  ],
+                  decoration: InputDecoration(
+                      labelText: "Phone Number",
+                      focusColor: primaryColor,
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor)),
+                      disabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor)),
+                      focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white)),
+                      border: OutlineInputBorder(
+                          borderSide: BorderSide(color: primaryColor))),
+                  onChanged: (value) {
+                    setState(() {
+                      phoneNumber = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your phone number';
+                    } else if (value.length != 10) {
+                      return 'Please enter a valid phone number';
+                    }
+                    return null;
+                  },
+                )),
             SizedBox(
               height: 50,
             ),
-            Text("We'll text you a verification code. Carrier rates may apply.",
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: primaryColor)),
+            SizedBox(
+                width: size.width - 50,
+                child: Text(
+                    "We'll text you a verification code. Carrier rates may apply.",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.white))),
             SizedBox(
               height: 300,
             ),
@@ -159,13 +179,13 @@ class CountryDropdown extends StatelessWidget {
       alignment: Alignment.center,
       icon: const Icon(
         Icons.arrow_downward,
-        color: dipityPurple,
+        color: Colors.white,
       ),
       elevation: 16,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: primaryColor),
       underline: Container(
         height: 2,
-        color: dipityPurple,
+        color: Colors.white,
       ),
       onChanged: (String? newValue) {
         handleDropdownChange(newValue!);
@@ -177,6 +197,32 @@ class CountryDropdown extends StatelessWidget {
           child: Text(value),
         );
       }).toList(),
+    );
+  }
+}
+
+class NumberTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    final int newTextLength = newValue.text.length;
+    int selectionIndex = newValue.selection.end;
+    int usedSubstringIndex = 0;
+    final StringBuffer newText = new StringBuffer();
+    if (newTextLength >= 1) {
+      newText.write('+');
+      if (newValue.selection.end >= 1) selectionIndex++;
+    }
+    if (newTextLength >= 3) {
+      newText.write(newValue.text.substring(0, usedSubstringIndex = 2) + ' ');
+      if (newValue.selection.end >= 2) selectionIndex += 1;
+    }
+    // Dump the rest.
+    if (newTextLength >= usedSubstringIndex)
+      newText.write(newValue.text.substring(usedSubstringIndex));
+    return new TextEditingValue(
+      text: newText.toString(),
+      selection: new TextSelection.collapsed(offset: selectionIndex),
     );
   }
 }

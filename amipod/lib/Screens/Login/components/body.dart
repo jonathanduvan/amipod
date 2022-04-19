@@ -1,5 +1,4 @@
-import 'dart:ffi';
-import 'package:amipod/Screens/CreatePin/components/components/background.dart';
+import 'package:amipod/Screens/Login/components/background.dart';
 import 'package:amipod/Screens/Home/home_screen.dart';
 import 'package:amipod/Services/encryption.dart';
 import 'package:amipod/Services/secure_storage.dart';
@@ -44,7 +43,7 @@ class _BodyState extends State<Body> {
       var currKey = result[0];
       var pinhash = result[1];
 
-      var encryptObject = EncryptionManager(encryptionString: currKey);
+      var encryptObject = EncryptionManager();
 
       setState(() {
         currEncryptKey = currKey;
@@ -63,7 +62,7 @@ class _BodyState extends State<Body> {
   }
 
   bool _checkPinNumber() {
-    var enteredPassword = '$currEncryptKey:$pinNumber';
+    var enteredPassword = 'pin_number:$pinNumber';
     return encrypter.isPasswordValid(pinCryptFormatHash, enteredPassword);
   }
 
@@ -74,66 +73,95 @@ class _BodyState extends State<Body> {
         child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-          Text('Log in using your PIN.'),
+          SizedBox(
+            height: 150,
+          ),
+          Text("Log in using your PIN.",
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          SizedBox(
+            height: 20,
+          ),
           Form(
             key: _pinNumberFormKey,
             child: Column(
               children: <Widget>[
-                PinCodeTextField(
-                  appContext: context,
-                  length: 4,
-                  obscureText: false,
-                  animationType: AnimationType.fade,
-                  pinTheme: PinTheme(
-                    shape: PinCodeFieldShape.box,
-                    borderRadius: BorderRadius.circular(5),
-                    fieldHeight: 50,
-                    fieldWidth: 40,
-                    activeFillColor: Colors.white,
-                  ),
-                  animationDuration: Duration(milliseconds: 300),
-                  backgroundColor: Colors.blue.shade50,
-                  enableActiveFill: true,
-                  controller: textEditingController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please a valid pin';
-                    }
-                    if (value.length < 4) {
-                      return '';
-                    }
-                    var passCheck = _checkPinNumber();
+                SizedBox(
+                  width: size.width - 100,
+                  child: PinCodeTextField(
+                    appContext: context,
+                    length: 4,
+                    obscureText: false,
+                    animationType: AnimationType.fade,
+                    pinTheme: PinTheme(
+                      shape: PinCodeFieldShape.box,
+                      borderRadius: BorderRadius.circular(5),
+                      fieldHeight: 50,
+                      fieldWidth: 50,
+                      activeFillColor: primaryColor,
+                      inactiveFillColor: Colors.white,
+                      activeColor: primaryColor,
+                      inactiveColor: Colors.white,
+                    ),
+                    animationDuration: Duration(milliseconds: 300),
+                    enableActiveFill: true,
+                    controller: textEditingController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please a valid pin';
+                      }
+                      if (value.length < 4) {
+                        return '';
+                      }
+                      var passCheck = _checkPinNumber();
 
-                    if (passCheck) {
-                      return null;
-                    } else {
-                      return 'Invalid pin. Please Type in your pin.';
-                    }
-                  },
-                  onChanged: (value) {
-                    setState(() {
-                      pinNumber = value;
-                    });
-                  },
+                      if (passCheck) {
+                        return null;
+                      } else {
+                        return 'Invalid pin. Please Type in your pin.';
+                      }
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        pinNumber = value;
+                      });
+                    },
+                  ),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Validate returns true if the form is valid, or false otherwise.
-                    if (_pinNumberFormKey.currentState!.validate()) {
-                      // If the form is valid, display a snackbar. In the real world,
-                      // you'd often call a server or save the information in a database.
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Logging in...')),
-                      );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Home()),
-                      );
-                    }
-                  },
-                  child: const Text('Login'),
+                SizedBox(
+                  width: size.width - 100,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      primary: primaryColor,
+                    ),
+                    onPressed: () {
+                      // Validate returns true if the form is valid, or false otherwise.
+                      if (_pinNumberFormKey.currentState!.validate()) {
+                        // If the form is valid, display a snackbar. In the real world,
+                        // you'd often call a server or save the information in a database.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Logging in...')),
+                        );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const Home()),
+                        );
+                      }
+                    },
+                    child: const Text('Login',
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20)),
+                  ),
                 ),
-                Text('Forgot your pin? Re-register here'),
+                SizedBox(
+                  height: 50,
+                ),
+                Text("Forgot your pin? Re-register here",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.white))
               ],
             ),
           ),
