@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:amipod/Services/hive_api.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
@@ -53,16 +55,45 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     LatLng(38.922063, -76.9965217),
     LatLng(43.4265187, -72.3217558)
   ];
+
+  int _start = 10;
+  late Timer _timer;
+
+  void startTimer() {
+    const oneSec = Duration(seconds: 1);
+    _timer = Timer.periodic(
+      oneSec,
+      (Timer timer) {
+        if (_start == 0) {
+          setState(() {
+            timer.cancel();
+          });
+        } else {
+          setState(() {
+            _start--;
+          });
+        }
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    print('initializing conn page');
+    startTimer();
     refreshContacts();
     _getAllPods();
   }
 
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
   Future<void> refreshContacts() async {
     // Load without thumbnails initially.
+    await Future.delayed(Duration(seconds: 6));
     var contacts = (await ContactsService.getContacts());
 //      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
 //          ;
@@ -89,7 +120,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     // Check for if connected goes here
 
     // Dummy code for creating connectedContact list
-    int howMany = 3;
+    int howMany = 0;
 
     for (var i = 0; i < howMany; i++) {
       var latlong = testUSLocations[i];
@@ -155,8 +186,19 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     });
   }
 
-  bool checkContactsList() {
-    return hiveContacts.isNotEmpty;
+  bool checkTimer() {
+    return _start == 0;
+  }
+
+  bool checkList(Iterable<dynamic> infoList) {
+    if (infoList.isNotEmpty) {
+      return true;
+    } else if (infoList.isNotEmpty && (checkTimer())) {
+      return true;
+    } else {
+      return false;
+    }
+    ;
   }
 
   Widget build(BuildContext context) {
@@ -186,7 +228,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: hivePods.isNotEmpty
+          child: checkList(hivePods)
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
@@ -262,7 +304,15 @@ class _ConnectionsViewState extends State<ConnectionsView> {
                   },
                 )
               : Center(
-                  child: CircularProgressIndicator(),
+                  child: checkTimer()
+                      ? Text(
+                          "No Connections to Display",
+                          style: TextStyle(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 12.0,
+                          ),
+                        )
+                      : CircularProgressIndicator(),
                 ),
         ),
       ]),
@@ -286,7 +336,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: checkContactsList()
+          child: checkList(hiveContacts)
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
@@ -309,7 +359,15 @@ class _ConnectionsViewState extends State<ConnectionsView> {
                   },
                 )
               : Center(
-                  child: CircularProgressIndicator(),
+                  child: checkTimer()
+                      ? Text(
+                          "No Contacts to Display",
+                          style: TextStyle(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 12.0,
+                          ),
+                        )
+                      : CircularProgressIndicator(),
                 ),
         ),
       ]),

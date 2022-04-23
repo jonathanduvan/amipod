@@ -27,8 +27,11 @@ class HiveAPI {
     return encryptedBox;
   }
 
-  Box openContactsBox() {
-    return Hive.box<ContactModel>(contactsBoxName);
+  Future<Box> openContactsBox(List<int> key) async {
+    // return Hive.box<ContactModel>(contactsBoxName);
+    final encryptedBox = await Hive.openBox<ContactModel>(contactsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
   }
 
   ContactModel createAndAddContact(EncryptionManager encrypter, Box contactsBox,
@@ -89,8 +92,11 @@ class HiveAPI {
     return encryptedBox;
   }
 
-  Box openConnectionsBox() {
-    return Hive.box<ConnectionModel>(connectionsBoxName);
+  Future<Box> openConnectionsBox(List<int> key) async {
+    // Initialize TypeAdapters
+    final encryptedBox = await Hive.openBox<ConnectionModel>(connectionsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
   }
 
   Iterable<dynamic> getAllConnections(Box connectionsBox) {
@@ -101,15 +107,17 @@ class HiveAPI {
 
   // Functions Relating to Pods
 
-  Future<Box> createPodBox(List<int> key) async {
+  Future<Box> createPodsBox(List<int> key) async {
     Hive.registerAdapter(PodModelAdapter());
     final encryptedBox = await Hive.openBox<PodModel>(podsBoxName,
         encryptionCipher: HiveAesCipher(key));
     return encryptedBox;
   }
 
-  Box openPodsBox() {
-    return Hive.box<PodModel>(podsBoxName);
+  Future<Box> openPodsBox(List<int> key) async {
+    final encryptedBox = await Hive.openBox<PodModel>(podsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
   }
 
   PodModel createPod(Pod flutterPod) {

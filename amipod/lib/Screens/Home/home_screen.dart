@@ -1,4 +1,4 @@
-import 'dart:convert' show base64Url, base64UrlEncode;
+import 'dart:convert' show base64Decode, base64Url, base64UrlEncode;
 import 'package:amipod/HiveModels/contact_model.dart';
 import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Screens/Home/components/connections_view.dart';
@@ -130,7 +130,8 @@ class _HomeState extends State<Home> {
       tempContactsBox = await hiveApi.createContactsBox(contactsKey);
     } else {
       encryptContactsKey = allValues[unconnectedContactsStorageKeyName]!;
-      tempContactsBox = hiveApi.openContactsBox();
+      var contactsKey = base64Decode(encryptContactsKey);
+      tempContactsBox = await hiveApi.openContactsBox(contactsKey);
     }
 
     // Check status of Connections Hive Box
@@ -144,7 +145,8 @@ class _HomeState extends State<Home> {
       tempConnectionsBox = await hiveApi.createConnectionsBox(connectionsKey);
     } else {
       encryptConnectionsKey = allValues[connectionsStorageKeyName]!;
-      tempConnectionsBox = hiveApi.openConnectionsBox();
+      var connectionsKey = base64Decode(encryptConnectionsKey);
+      tempConnectionsBox = await hiveApi.openConnectionsBox(connectionsKey);
     }
 
     // Check status of Pods Hive Box
@@ -154,10 +156,11 @@ class _HomeState extends State<Home> {
 
       await storage.writeSecureData(podsStorageKeyName, encryptPodsKey);
 
-      tempPodsBox = await hiveApi.createPodBox(podsKey);
+      tempPodsBox = await hiveApi.createPodsBox(podsKey);
     } else {
       encryptPodsKey = allValues[podsStorageKeyName]!;
-      tempPodsBox = hiveApi.openPodsBox();
+      var podsKey = base64Decode(encryptPodsKey);
+      tempPodsBox = await hiveApi.openPodsBox(podsKey);
     }
 
     setState(() {
@@ -309,6 +312,7 @@ class _HomeState extends State<Home> {
 
   void updateContacts() {
     if (contactsBox.isEmpty) {
+      print("i'm empty like my soul");
       addAllContacts();
     } else {
       hiveApi.addMissingContacts(
