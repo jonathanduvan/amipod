@@ -6,12 +6,11 @@ part 'pod_model.g.dart';
 
 @HiveType(typeId: 3)
 class PodModel extends HiveObject {
-  PodModel(
-      {required this.name,
-      required this.id,
-      this.avatar,
-      this.connections,
-      this.contacts});
+  PodModel({
+    required this.name,
+    required this.id,
+    this.avatar,
+  });
 
   @HiveField(0)
   String id;

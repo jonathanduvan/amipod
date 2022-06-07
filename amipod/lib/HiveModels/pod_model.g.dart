@@ -20,9 +20,9 @@ class PodModelAdapter extends TypeAdapter<PodModel> {
       name: fields[1] as String,
       id: fields[0] as String,
       avatar: fields[2] as Uint8List?,
-      connections: (fields[3] as HiveList?)?.castHiveList(),
-      contacts: (fields[4] as HiveList?)?.castHiveList(),
-    );
+    )
+      ..connections = (fields[3] as HiveList?)?.castHiveList()
+      ..contacts = (fields[4] as HiveList?)?.castHiveList();
   }
 
   @override

@@ -2,6 +2,8 @@ import 'package:amipod/Screens/Login/components/background.dart';
 import 'package:amipod/Screens/Home/home_screen.dart';
 import 'package:amipod/Services/encryption.dart';
 import 'package:amipod/Services/secure_storage.dart';
+import 'package:amipod/Services/user_management.dart';
+import 'package:hive/hive.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/constants.dart';
@@ -21,6 +23,8 @@ class _BodyState extends State<Body> {
   final _pinNumberFormKey = GlobalKey<FormState>();
   SecureStorage storage = SecureStorage();
   late EncryptionManager encrypter;
+  UserManagement userManagement = UserManagement();
+
   var currEncryptKey;
   var pinCryptFormatHash;
 
@@ -64,6 +68,17 @@ class _BodyState extends State<Body> {
   bool _checkPinNumber() {
     var enteredPassword = 'pin_number:$pinNumber';
     return encrypter.isPasswordValid(pinCryptFormatHash, enteredPassword);
+  }
+
+  void loginToProfile(
+      Box<dynamic> contactsBox, Box connectionsBox, Box podsBox) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => Home(
+                contactsBox: contactsBox,
+                connectionsBox: connectionsBox,
+                podsBox: podsBox)));
   }
 
   Widget build(BuildContext context) {
@@ -143,10 +158,8 @@ class _BodyState extends State<Body> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Logging in...')),
                         );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const Home()),
-                        );
+                        userManagement.checkUserStatus().then((boxes) =>
+                            {loginToProfile(boxes[0], boxes[1], boxes[2])});
                       }
                     },
                     child: const Text('Login',

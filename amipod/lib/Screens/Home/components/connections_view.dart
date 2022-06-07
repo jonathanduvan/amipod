@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:amipod/HiveModels/connection_model.dart';
+import 'package:amipod/HiveModels/contact_model.dart';
+import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Services/hive_api.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
@@ -13,198 +16,97 @@ import 'package:amipod/Screens/Home/components/add_button.dart';
 
 class ConnectionsView extends StatefulWidget {
   final int currentIndex;
-  final Function getAllContacts;
-  final Function getAllPods;
 
   final Box contactsBox;
   final Box connectionsBox;
   final Box podsBox;
 
-  const ConnectionsView({
-    Key? key,
-    required this.currentIndex,
-    required this.getAllContacts,
-    required this.getAllPods,
-    required this.contactsBox,
-    required this.connectionsBox,
-    required this.podsBox,
-  }) : super(key: key);
+  final Iterable<dynamic>? hiveContacts;
+  final Iterable<dynamic>? hiveConnections;
+  final Iterable<dynamic>? hivePods;
+
+  final String searchText;
+  const ConnectionsView(
+      {Key? key,
+      required this.currentIndex,
+      required this.contactsBox,
+      required this.connectionsBox,
+      required this.podsBox,
+      this.hiveContacts,
+      this.hiveConnections,
+      this.hivePods,
+      required this.searchText})
+      : super(key: key);
   @override
-  _ConnectionsViewState createState() => _ConnectionsViewState();
+  State<ConnectionsView> createState() => _ConnectionsViewState();
 }
 
 class _ConnectionsViewState extends State<ConnectionsView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
-
-  List<ConnectedContact> connectedContacts = [];
-  List<UnconnectedContact> unconnectedContacts = [];
-
-  Iterable<dynamic> hiveContacts = [];
-  Iterable<dynamic> hiveConnections = [];
-  Iterable<dynamic> hivePods = [];
-
-  Map<String, Pod> allPods = {};
+  List<ContactModel> contacts = [];
+  List<ConnectionModel> connections = [];
+  List<PodModel> pods = [];
 
   HiveAPI hiveApi = HiveAPI();
 
-  List<String> addOptions = ['New Connection', 'New Pod'];
-
-  List<LatLng> testUSLocations = [
-    LatLng(30.386308848515, -82.674663546642),
-    LatLng(30.2304846, -82.0428185),
-    LatLng(38.922063, -76.9965217),
-    LatLng(43.4265187, -72.3217558)
-  ];
-
   int _start = 10;
   late Timer _timer;
-
-  void startTimer() {
-    const oneSec = Duration(seconds: 1);
-    _timer = Timer.periodic(
-      oneSec,
-      (Timer timer) {
-        if (_start == 0) {
-          setState(() {
-            timer.cancel();
-          });
-        } else {
-          setState(() {
-            _start--;
-          });
-        }
-      },
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    startTimer();
-    refreshContacts();
-    _getAllPods();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  Future<void> refreshContacts() async {
-    // Load without thumbnails initially.
-    await Future.delayed(Duration(seconds: 6));
-    var contacts = (await ContactsService.getContacts());
-//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          ;
-
-    if (contacts != null) {
-      _getAllContacts(contacts);
-    }
-  }
-
-  Future<String> _getAddress(double? lat, double? lang) async {
-    if (lat == null || lang == null) return "";
-    GeoCode geoCode = GeoCode();
-    // Address address =
-    //     await geoCode.reverseGeocoding(latitude: lat, longitude: lang);
-
-    // return "${address.streetAddress}; ${address.city}; ${address.countryName}; ${address.postal}";
-    return "test st; Testville; US; 33071";
-  }
-
-  Future<ContactsMap> _updateConnectedContacts(List<Contact> contacts) async {
-    List<ConnectedContact> connected = [];
-    List<UnconnectedContact> unconnected = [];
-
-    // Check for if connected goes here
-
-    // Dummy code for creating connectedContact list
-    int howMany = 0;
-
-    for (var i = 0; i < howMany; i++) {
-      var latlong = testUSLocations[i];
-
-      var address = await _getAddress(latlong.latitude, latlong.longitude);
-
-      var addressParts = address.toString().split(";");
-
-      var conCon = ConnectedContact(
-          name: contacts[i].displayName!,
-          initials: contacts[i].initials(),
-          avatar: contacts[i].avatar,
-          phone: contacts[i].phones![0].value!,
-          location: testUSLocations[i],
-          street: addressParts[0],
-          city: addressParts[1]);
-
-      contacts.removeAt(i);
-      connected.add(conCon);
-    }
-    for (var i = 0; i < contacts.length; i++) {
-      var unconCon = UnconnectedContact(
-        name: contacts[i].displayName!,
-        initials: contacts[i].initials(),
-        avatar: contacts[i].avatar,
-        phone: contacts[i].phones![0].value!,
-      );
-
-      unconnected.add(unconCon);
-    }
-
-    var allContacts =
-        ContactsMap(connected: connected, unconnected: unconnected);
-    return allContacts;
-
-    // connected = contacts.
-  }
-
-  void _getAllContacts(List<Contact> contacts) async {
-    // Lazy load thumbnails after rendering initial contacts.
-    //TODO: Function to check if contact is connected or not goes here
-    var mapContacts = await _updateConnectedContacts(contacts);
-    widget.getAllContacts(mapContacts);
-
-    var hiveCons = hiveApi.getAllContacts(widget.contactsBox);
-    var hiveConnects = hiveApi.getAllConnections(widget.connectionsBox);
-
-    setState(() {
-      connectedContacts = mapContacts.connected!;
-      unconnectedContacts = mapContacts.unconnected!;
-      hiveContacts = hiveCons;
-      hiveConnections = hiveConnects;
-    });
-  }
-
-  void _getAllPods() {
-    // Here is the logic for getting pods a user created.
-    var hivePods = hiveApi.getAllPods(widget.podsBox);
-    widget.getAllPods(allPods);
-
-    setState(() {
-      hivePods = hivePods;
-    });
-  }
 
   bool checkTimer() {
     return _start == 0;
   }
 
+  void _startTimer() {
+    Timer(const Duration(seconds: 7), () {
+      setState(() {
+        _start = 0;
+      });
+    });
+  }
+
+  List<dynamic> searchPodList(Iterable<dynamic> infoList) {
+    List<dynamic> searchedPods = [];
+    List<PodModel> pods = [];
+    for (PodModel pod in infoList) {
+      String data = pod.name;
+
+      if (data.toLowerCase().contains(widget.searchText.toLowerCase())) {
+        searchedPods.add(pod);
+      }
+    }
+    return searchedPods;
+  }
+
   bool checkList(Iterable<dynamic> infoList) {
     if (infoList.isNotEmpty) {
-      return true;
-    } else if (infoList.isNotEmpty && (checkTimer())) {
+      if (widget.searchText != '') {
+        var firstEle = infoList.first;
+
+        if (firstEle is ContactModel) {
+          searchPodList(infoList);
+        } else if (firstEle is ConnectionModel) {
+          // searchConnectionList(infoList);
+        } else {
+          // searchContactList(infoList);
+        }
+      }
+
       return true;
     } else {
       return false;
     }
-    ;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
-
     return Background(
         child: ListView(padding: const EdgeInsets.only(top: 10.0), children: <
             Widget>[
@@ -228,15 +130,15 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: checkList(hivePods)
+          child: checkList(widget.hivePods!)
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
-                  itemCount: allPods.keys.length,
+                  itemCount: widget.hivePods!.length,
                   itemBuilder: (BuildContext context, int index) {
-                    Pod c = allPods[allPods.keys.elementAt(index)]!;
-
+                    PodModel c = widget.hivePods!.elementAt(index);
                     return Card(
+                      color: dipityBlack,
                       elevation: 6,
                       margin: EdgeInsets.all(10),
                       child: ListTile(
@@ -244,8 +146,14 @@ class _ConnectionsViewState extends State<ConnectionsView> {
                         leading: (c.avatar != null && c.avatar?.isEmpty == true)
                             ? CircleAvatar(
                                 backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(child: Text(c.name[0])),
-                        title: Text(c.name),
+                            : CircleAvatar(
+                                child: Text(
+                                  c.name[0],
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                                backgroundColor: podOrange),
+                        title:
+                            Text(c.name, style: TextStyle(color: Colors.white)),
                       ),
                     );
                   },
@@ -281,23 +189,29 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: hiveConnections.isNotEmpty
+          child: checkList(widget.hiveConnections!)
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
-                  itemCount: connectedContacts.length,
+                  itemCount: widget.hiveConnections!.length,
                   itemBuilder: (BuildContext context, int index) {
-                    ConnectedContact c = connectedContacts.elementAt(index);
+                    ConnectionModel c =
+                        widget.hiveConnections!.elementAt(index);
 
                     return Card(
                       elevation: 6,
+                      color: dipityBlack,
                       margin: EdgeInsets.all(10),
                       child: ListTile(
                         onTap: () {},
                         leading: (c.avatar != null && c.avatar?.isEmpty == true)
                             ? CircleAvatar(
                                 backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(child: Text(c.initials)),
+                            : CircleAvatar(
+                                child: Text(
+                                c.initials,
+                                style: TextStyle(color: Colors.black),
+                              )),
                         title: Text(c.name),
                       ),
                     );
@@ -336,24 +250,34 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: checkList(hiveContacts)
+          child: checkList(widget.hiveContacts!)
               ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   shrinkWrap: true,
-                  itemCount: unconnectedContacts.length,
+                  itemCount: widget.hiveContacts!.length,
                   itemBuilder: (BuildContext context, int index) {
-                    UnconnectedContact c = unconnectedContacts.elementAt(index);
-
+                    ContactModel c = widget.hiveContacts!.elementAt(index);
                     return Card(
                       elevation: 6,
                       margin: EdgeInsets.all(10),
+                      color: dipityBlack,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(color: Colors.white, width: .5),
+                      ),
                       child: ListTile(
                         onTap: () {},
                         leading: (c.avatar != null && c.avatar?.isEmpty == true)
                             ? CircleAvatar(
                                 backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(child: Text(c.initials)),
-                        title: Text(c.name),
+                            : CircleAvatar(
+                                child: Text(
+                                  c.initials,
+                                  style: TextStyle(color: Colors.black),
+                                ),
+                                backgroundColor: primaryColor,
+                              ),
+                        title:
+                            Text(c.name, style: TextStyle(color: Colors.white)),
                       ),
                     );
                   },
@@ -367,8 +291,7 @@ class _ConnectionsViewState extends State<ConnectionsView> {
                             fontSize: 12.0,
                           ),
                         )
-                      : CircularProgressIndicator(),
-                ),
+                      : CircularProgressIndicator()),
         ),
       ]),
       Row(

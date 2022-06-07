@@ -1,14 +1,15 @@
 import 'package:amipod/Screens/CreatePin/components/components/background.dart';
 import 'package:amipod/Screens/Home/home_screen.dart';
 import 'package:amipod/Services/encryption.dart';
+import 'package:amipod/Services/user_management.dart';
 import 'package:amipod/Services/secure_storage.dart';
+import 'package:hive/hive.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/constants.dart';
 
 class Body extends StatefulWidget {
   const Body({Key? key}) : super(key: key);
-
   @override
   _BodyState createState() => _BodyState();
 }
@@ -20,6 +21,8 @@ class _BodyState extends State<Body> {
 
   final _pinNumberFormKey = GlobalKey<FormState>();
   SecureStorage storage = SecureStorage();
+  UserManagement userManagement = UserManagement();
+
   late EncryptionManager encrypter;
   @override
   void initState() {
@@ -32,10 +35,7 @@ class _BodyState extends State<Body> {
     // You can't use async/await here, because
     // We can't mark this method as async because of the @override
     // You could also make and call an async method that does the following
-    var encryptObject = EncryptionManager();
-    setState(() {
-      encrypter = encryptObject;
-    });
+    encrypter = EncryptionManager();
   }
 
   Future<String> getEncryptionValues() async {
@@ -48,6 +48,17 @@ class _BodyState extends State<Body> {
     var encryptedPinNumber = encrypter.hashPassword(keyAndPin);
 
     await storage.writeSecureData(userPinKeyName, encryptedPinNumber);
+  }
+
+  void loginToProfile(
+      Box<dynamic> contactsBox, Box connectionsBox, Box podsBox) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => Home(
+                contactsBox: contactsBox,
+                connectionsBox: connectionsBox,
+                podsBox: podsBox)));
   }
 
   Widget build(BuildContext context) {
@@ -118,10 +129,9 @@ class _BodyState extends State<Body> {
                       const SnackBar(content: Text('Processing Pin Number')),
                     );
                     _onSubmitPinNumber(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Home()),
-                    );
+
+                    userManagement.checkUserStatus().then((boxes) =>
+                        {loginToProfile(boxes[0], boxes[1], boxes[2])});
                   }
                 },
                 child: const Text('Create Pin',

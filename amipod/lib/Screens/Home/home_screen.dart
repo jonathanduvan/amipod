@@ -15,26 +15,33 @@ import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 // import 'package:geocode/geocode.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
+import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:uuid/uuid.dart';
 
 import 'components/add_panel.dart';
 
 class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+  final Box contactsBox;
+  final Box connectionsBox;
+  final Box podsBox;
+  const Home({
+    Key? key,
+    required this.contactsBox,
+    required this.connectionsBox,
+    required this.podsBox,
+  }) : super(key: key);
   @override
   State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
-  static int connectionsIndex = 1;
   bool displayMap = false;
-  List<Widget> pageList = [];
   List<Contact> allContacts = [];
   List<LatLng> allContactLocations = []; // Will need to be a widget later
 
@@ -47,12 +54,17 @@ class _HomeState extends State<Home> {
   List<Pod> allPods = [];
   List<PodModel> pods = [];
 
+  Iterable<dynamic> hiveContacts = [];
+  Iterable<dynamic> hiveConnections = [];
+  Iterable<dynamic> hivePods = [];
+
   String addOptionSelected = '';
+  String searchText = '';
 
   List<List<String>> addOptions = [
-    [],
-    [newConnectionText, newPodText],
-    [newEventText],
+    // [],
+    [newPodText],
+    // [newEventText],
     [newReminderText]
   ];
   List<LatLng> testUSLocations = [
@@ -87,91 +99,7 @@ class _HomeState extends State<Home> {
 
   HiveAPI hiveApi = HiveAPI();
 
-  late Box connectionsBox;
-  late Box contactsBox;
-  late Box podsBox;
-
   bool _isAddButtonVisible = true;
-
-  void checkUserStatus() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, String> allValues = await storage.readAllSecureData();
-    var userPhone = allValues[userPhoneNumberKeyName];
-
-    var userId;
-
-    String encryptContactsKey;
-    String encryptConnectionsKey;
-    String encryptPodsKey;
-    String encryptRemindersKey;
-
-    Box tempContactsBox;
-    Box tempConnectionsBox;
-    Box tempPodsBox;
-    Box tempRemindersBox;
-
-    // Check status of user Id
-    if (allValues[idKeyName] == null) {
-      var userRawId = 'dipity_userid:$userPhone';
-      userId = encrypter.encryptData(userRawId);
-      await storage.writeSecureData(idKeyName, userId);
-    } else {
-      userId = allValues[idKeyName];
-    }
-
-    // Check status of Contacts Hive Box
-    if (allValues[unconnectedContactsStorageKeyName] == null) {
-      var contactsKey = Hive.generateSecureKey();
-      encryptContactsKey = base64UrlEncode(contactsKey);
-
-      await storage.writeSecureData(
-          unconnectedContactsStorageKeyName, encryptContactsKey);
-
-      tempContactsBox = await hiveApi.createContactsBox(contactsKey);
-    } else {
-      encryptContactsKey = allValues[unconnectedContactsStorageKeyName]!;
-      var contactsKey = base64Decode(encryptContactsKey);
-      tempContactsBox = await hiveApi.openContactsBox(contactsKey);
-    }
-
-    // Check status of Connections Hive Box
-    if (allValues[connectionsStorageKeyName] == null) {
-      var connectionsKey = Hive.generateSecureKey();
-      encryptConnectionsKey = base64UrlEncode(connectionsKey);
-
-      await storage.writeSecureData(
-          connectionsStorageKeyName, encryptConnectionsKey);
-
-      tempConnectionsBox = await hiveApi.createConnectionsBox(connectionsKey);
-    } else {
-      encryptConnectionsKey = allValues[connectionsStorageKeyName]!;
-      var connectionsKey = base64Decode(encryptConnectionsKey);
-      tempConnectionsBox = await hiveApi.openConnectionsBox(connectionsKey);
-    }
-
-    // Check status of Pods Hive Box
-    if (allValues[podsStorageKeyName] == null) {
-      var podsKey = Hive.generateSecureKey();
-      encryptPodsKey = base64UrlEncode(podsKey);
-
-      await storage.writeSecureData(podsStorageKeyName, encryptPodsKey);
-
-      tempPodsBox = await hiveApi.createPodsBox(podsKey);
-    } else {
-      encryptPodsKey = allValues[podsStorageKeyName]!;
-      var podsKey = base64Decode(encryptPodsKey);
-      tempPodsBox = await hiveApi.openPodsBox(podsKey);
-    }
-
-    setState(() {
-      connectionsBox = tempConnectionsBox;
-      contactsBox = tempContactsBox;
-      podsBox = tempPodsBox;
-      // remindersBox = tempRemindersBox;
-    });
-
-    addPageLists();
-  }
 
   Future<void> _askPermissions() async {
     PermissionStatus permissionStatus = await _getLocationPermission();
@@ -234,42 +162,110 @@ class _HomeState extends State<Home> {
     });
   }
 
-  void _getAllContacts(ContactsMap mapContacts) async {
-    setState(() {
-      connectedContacts = mapContacts.connected!;
-      unconnectedContacts = mapContacts.unconnected!;
-    });
+  Future<void> refreshContacts() async {
+    // Load without thumbnails initially.
+    await Future.delayed(Duration(seconds: 6));
+    var rawContacts = (await ContactsService.getContacts());
+//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
+//          ;
 
-    updateContacts();
+    if (rawContacts != null) {
+      _getAllContacts(rawContacts);
+    }
   }
 
-  void _getAllPods(Map<String, Pod> podsCreated) {
-    if ((podsCreated.isEmpty & allPods.isEmpty) == false) {
+  Future<String> _getAddress(double? lat, double? lang) async {
+    if (lat == null || lang == null) return "";
+    GeoCode geoCode = GeoCode();
+    // Address address =
+    //     await geoCode.reverseGeocoding(latitude: lat, longitude: lang);
+
+    // return "${address.streetAddress}; ${address.city}; ${address.countryName}; ${address.postal}";
+    return "test st; Testville; US; 33071";
+  }
+
+  Future<ContactsMap> _updateConnectedContacts(List<Contact> contacts) async {
+    List<ConnectedContact> connected = [];
+    List<UnconnectedContact> unconnected = [];
+
+    // Check for if connected goes here
+
+    // Dummy code for creating connectedContact list
+    int howMany = 0;
+
+    for (var i = 0; i < howMany; i++) {
+      var latlong = testUSLocations[i];
+
+      var address = await _getAddress(latlong.latitude, latlong.longitude);
+
+      var addressParts = address.toString().split(";");
+
+      var conCon = ConnectedContact(
+          name: contacts[i].displayName!,
+          initials: contacts[i].initials(),
+          avatar: contacts[i].avatar,
+          phone: contacts[i].phones![0].value!,
+          location: testUSLocations[i],
+          street: addressParts[0],
+          city: addressParts[1]);
+
+      contacts.removeAt(i);
+      connected.add(conCon);
+    }
+    for (var i = 0; i < contacts.length; i++) {
+      var unconCon = UnconnectedContact(
+        name: contacts[i].displayName!,
+        initials: contacts[i].initials(),
+        avatar: contacts[i].avatar,
+        phone: contacts[i].phones![0].value!,
+      );
+
+      unconnected.add(unconCon);
+    }
+
+    var allContacts =
+        ContactsMap(connected: connected, unconnected: unconnected);
+    return allContacts;
+
+    // connected = contacts.
+  }
+
+  void _getAllContacts(List<Contact> contacts) async {
+    // Lazy load thumbnails after rendering initial contacts.
+    //TODO: Function to check if contact is connected or not goes here
+    var mapContacts = await _updateConnectedContacts(contacts);
+
+    if (hiveApi.areBoxesOpen(
+        [widget.contactsBox, widget.connectionsBox, widget.podsBox])) {
+      var hiveCons = hiveApi.getAllContacts(widget.contactsBox);
+      var hiveConnects = hiveApi.getAllConnections(widget.connectionsBox);
+
       setState(() {
-        allPods = allPods;
+        connectedContacts = mapContacts.connected!;
+        unconnectedContacts = mapContacts.unconnected!;
+        hiveContacts = hiveCons;
+        hiveConnections = hiveConnects;
+      });
+
+      updateContacts();
+    }
+  }
+
+  void _getAllPods() {
+    var podsCreated = hiveApi.getAllPods(widget.podsBox);
+    if ((podsCreated.isEmpty) == false) {
+      setState(() {
+        hivePods = podsCreated;
       });
     }
   }
 
-  void addPageLists() {
-    pageList.add(HomeView(currentIndex: _selectedIndex));
-    pageList.add(ConnectionsView(
-      currentIndex: _selectedIndex,
-      getAllContacts: _getAllContacts,
-      getAllPods: _getAllPods,
-      contactsBox: contactsBox,
-      connectionsBox: connectionsBox,
-      podsBox: podsBox,
-    ));
-    pageList.add(EventsView(currentIndex: _selectedIndex));
-    pageList.add(RemindersView(currentIndex: _selectedIndex));
-  }
-
   @override
   void initState() {
-    updateSharedPreferences();
-    checkUserStatus();
     super.initState();
+    updateSharedPreferences();
+    refreshContacts();
+    _getAllPods();
     _askPermissions();
   }
 
@@ -291,11 +287,11 @@ class _HomeState extends State<Home> {
   }
 
   bool onConnectionsPage(int index) {
-    return (connectionsIndex == index);
+    return true;
   }
 
   bool _getAddButtonStatus() {
-    return (_selectedIndex != 0) && _isAddButtonVisible;
+    return true;
   }
 
   void displayAddButton() {
@@ -311,24 +307,25 @@ class _HomeState extends State<Home> {
   }
 
   void updateContacts() {
-    if (contactsBox.isEmpty) {
+    if (widget.contactsBox.isEmpty) {
       print("i'm empty like my soul");
       addAllContacts();
-    } else {
-      hiveApi.addMissingContacts(
-          encrypter, contactsBox, connectionsBox, unconnectedContacts);
     }
+    // else {
+    //   hiveApi.addMissingContacts(
+    //       encrypter, contactsBox, connectionsBox, unconnectedContacts);
+    // }
   }
 
   void addAllContacts() {
     for (var element in unconnectedContacts) {
-      hiveApi.createAndAddContact(encrypter, contactsBox, element);
+      hiveApi.createAndAddContact(encrypter, widget.contactsBox, element);
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     _panelHeightOpen = MediaQuery.of(context).size.height * .80;
-
     return Scaffold(
       backgroundColor: Colors.white,
       drawer: Drawer(
@@ -352,7 +349,6 @@ class _HomeState extends State<Home> {
             ListTile(
               title: const Text('Logout'),
               onTap: () {
-                Hive.close();
                 updateLoginState(false).then((value) =>
                     Navigator.pushAndRemoveUntil(
                         context,
@@ -393,6 +389,12 @@ class _HomeState extends State<Home> {
                   hintText: 'Search...',
                   hintStyle: TextStyle(color: Colors.white),
                   border: InputBorder.none),
+              onChanged: (value) {
+                print(value);
+                setState(() {
+                  searchText = value;
+                });
+              },
             ),
             Row(
               children: pageSearchTags[_selectedIndex]
@@ -428,7 +430,7 @@ class _HomeState extends State<Home> {
           )),
       body: SlidingUpPanel(
         controller: _pc,
-        color: Colors.deepOrange,
+        color: Colors.black87,
         panelBuilder: (ScrollController sc) => _addPanel(sc),
         borderRadius: radius,
         onPanelClosed: () {
@@ -444,7 +446,20 @@ class _HomeState extends State<Home> {
             ? MapView(contacts: connectedContacts)
             : IndexedStack(
                 index: _selectedIndex,
-                children: pageList,
+                children: [
+                  // HomeView(currentIndex: _selectedIndex),
+                  ConnectionsView(
+                      currentIndex: _selectedIndex,
+                      contactsBox: widget.contactsBox,
+                      connectionsBox: widget.connectionsBox,
+                      podsBox: widget.podsBox,
+                      hiveContacts: hiveContacts,
+                      hiveConnections: hiveConnections,
+                      hivePods: hivePods,
+                      searchText: searchText),
+                  // EventsView(currentIndex: _selectedIndex),
+                  RemindersView(currentIndex: _selectedIndex)
+                ],
               ),
       ),
       bottomNavigationBar: displayMap
@@ -456,16 +471,16 @@ class _HomeState extends State<Home> {
                   icon: Icon(Icons.home),
                   label: 'Home',
                 ),
-                BottomNavigationBarItem(
-                  backgroundColor: backgroundColor,
-                  icon: Icon(Icons.people),
-                  label: 'Connections',
-                ),
-                BottomNavigationBarItem(
-                  backgroundColor: backgroundColor,
-                  icon: Icon(Icons.calendar_today),
-                  label: 'Events',
-                ),
+                // BottomNavigationBarItem(
+                //   backgroundColor: backgroundColor,
+                //   icon: Icon(Icons.people),
+                //   label: 'Connections',
+                // ),
+                // BottomNavigationBarItem(
+                //   backgroundColor: backgroundColor,
+                //   icon: Icon(Icons.calendar_today),
+                //   label: 'Events',
+                // ),
                 BottomNavigationBarItem(
                   backgroundColor: backgroundColor,
                   icon: Icon(Icons.alarm),
@@ -485,7 +500,16 @@ class _HomeState extends State<Home> {
     return MediaQuery.removePadding(
         context: context,
         removeTop: true,
-        child: addPanelForm(sc, addOptionSelected));
+        child: addPanelForm(
+            sc,
+            addOptionSelected,
+            hiveContacts,
+            hiveConnections,
+            encrypter,
+            widget.podsBox,
+            widget.connectionsBox,
+            widget.contactsBox,
+            _getAllPods));
   }
 
   Widget tagChip({

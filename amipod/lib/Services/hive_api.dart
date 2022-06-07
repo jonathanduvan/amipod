@@ -1,10 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:amipod/HiveModels/connection_model.dart';
 import 'package:amipod/HiveModels/contact_model.dart';
 import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Services/encryption.dart';
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants.dart';
 
@@ -12,6 +12,16 @@ class HiveAPI {
   String contactsBoxName = 'contactsBox';
   String connectionsBoxName = 'connectionsBox';
   String podsBoxName = 'podsBox';
+
+  bool areBoxesOpen(List<Box> boxes) {
+    bool open = true;
+    boxes.forEach((element) {
+      if (element.isOpen == false) {
+        open = false;
+      }
+    });
+    return open;
+  }
 
   List<int> decodeHiveBoxKey(String key) {
     final encryptionKey = base64Url.decode(key);
@@ -79,7 +89,11 @@ class HiveAPI {
   }
 
   Iterable<dynamic> getAllContacts(Box contactsBox) {
-    return contactsBox.values;
+    if (contactsBox.isOpen) {
+      return contactsBox.values;
+    }
+    Iterable<dynamic> noBox = [];
+    return noBox;
   }
 
   // Functions Relating to Connections
@@ -100,7 +114,11 @@ class HiveAPI {
   }
 
   Iterable<dynamic> getAllConnections(Box connectionsBox) {
-    return connectionsBox.values;
+    if (connectionsBox.isOpen) {
+      return connectionsBox.values;
+    }
+    Iterable<dynamic> noBox = [];
+    return noBox;
   }
 
   // TODO: add connections Functions
@@ -127,7 +145,43 @@ class HiveAPI {
   }
 
   Iterable<dynamic> getAllPods(Box podsBox) {
-    return podsBox.values;
+    if (podsBox.isOpen) {
+      return podsBox.values;
+    }
+    Iterable<dynamic> noBox = [];
+    return noBox;
+  }
+
+  bool createAndAddPod(
+      EncryptionManager encrypter,
+      Box podsBox,
+      Box contactsBox,
+      Box connectionsBox,
+      Map<String, ContactModel> podContacts,
+      String title) {
+    var uuid = const Uuid();
+
+    String id = uuid.v4();
+
+    var inPods = podsBox.get(id);
+
+    // If the pod is completely new
+    if ((inPods == null)) {
+      var newPod = PodModel(
+        name: title,
+        id: id,
+      );
+
+      podsBox.put(id, newPod);
+
+      newPod.contacts = HiveList(contactsBox); // Create a HiveList
+      newPod.contacts!.addAll(podContacts.values);
+
+      newPod.save();
+      return true;
+    }
+
+    return false;
   }
 
   addPod(Box podsBox, PodModel pod) {

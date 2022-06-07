@@ -10,8 +10,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'Services/secure_storage.dart';
-
 Future<void> main() async {
   await Hive.initFlutter();
   await dotenv.load(fileName: ".env");
@@ -53,6 +51,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void navigateUser() async {
+    // TEMPORARY CODE FOR RESTARTING LOGIN PROCESS
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     FlutterSecureStorage storage = FlutterSecureStorage();

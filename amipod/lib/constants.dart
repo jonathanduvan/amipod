@@ -6,6 +6,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 const primaryColor = Color(0xFF1DD3B0);
 const backgroundColor = Color(0xFF003E1F);
 const dipityPurple = Color(0xFF7E2E84);
+const podOrange = Color(0xFFF97068);
+const dipityBlack = Color(0xFF22242F);
 // Shared Preferences Keys
 const firstNameKey = 'first_name';
 const lastNameKey = 'last_name';
@@ -353,7 +355,7 @@ class TagModel {
 }
 
 final List<TagModel> connectionTags = [
-  TagModel(id: '1', title: 'Connections', tagColor: Colors.deepPurpleAccent),
-  TagModel(id: '2', title: 'Pods', tagColor: Colors.deepOrangeAccent),
-  TagModel(id: '3', title: 'Contacts', tagColor: Colors.grey),
+  TagModel(id: '1', title: 'Connections', tagColor: primaryColor),
+  TagModel(id: '2', title: 'Pods', tagColor: primaryColor),
+  TagModel(id: '3', title: 'Contacts', tagColor: primaryColor),
 ];
