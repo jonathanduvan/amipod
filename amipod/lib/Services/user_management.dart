@@ -3,13 +3,15 @@ import 'dart:convert';
 import 'package:amipod/constants.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:geocode/geocode.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 
 import 'hive_api.dart';
 import 'secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:amipod/Services/database_api.dart';
 import 'encryption.dart';
 
 class UserManagement {
@@ -23,7 +25,7 @@ class UserManagement {
   EncryptionManager encrypter = EncryptionManager();
 
   HiveAPI hiveApi = HiveAPI();
-
+  DatabaseAPI dbApi = DatabaseAPI();
   Future<List<Box>> checkUserStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, String> allValues = await storage.readAllSecureData();
@@ -105,12 +107,49 @@ class UserManagement {
     List<Box> boxes = [tempContactsBox, tempConnectionsBox, tempPodsBox];
     return boxes;
   }
+
+  Future<String> _getAddressFromLatLng(Position _currentPosition) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          _currentPosition.latitude, _currentPosition.longitude);
+
+      Placemark place = placemarks[0];
+
+      return "${place.locality}, ${place.postalCode}";
+    } catch (e) {
+      print(e);
+      return 'no location available';
+    }
+  }
+
+  Future<Map> updateUserLocation(Position position) async {
+    var currKey = await storage.readSecureData(idKeyName);
+    String readableLocation = await _getAddressFromLatLng(position);
+    String encryptedLat = encrypter.encryptData('lat:${position.latitude}');
+    String encryptedLong = encrypter.encryptData('long:${position.longitude}');
+    String encryptedReadableLocation = encrypter.encryptData(readableLocation);
+
+    final encryptedLocation = {
+      "position": [encryptedLat, encryptedLong],
+      "location": encryptedReadableLocation,
+    };
+    final location = {
+      "position": [position.latitude, position.longitude],
+      "location": readableLocation
+    };
+    print('calling set user');
+    dbApi.setUser(currKey, encryptedLocation);
+
+    return location;
+  }
+
   // remindersBox = tempRemindersBox;
 
   // refreshContacts();
   // _getAllPods();
 
 }
+
 
 //   Future<void> refreshContacts() async {
 //     // Load without thumbnails initially.

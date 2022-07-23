@@ -11,6 +11,7 @@ import 'package:amipod/Services/encryption.dart';
 import 'package:amipod/Services/hive_api.dart';
 import 'package:amipod/Services/secure_storage.dart';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:amipod/Services/user_management.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 // import 'package:geocode/geocode.dart';
@@ -19,7 +20,8 @@ import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
@@ -57,6 +59,9 @@ class _HomeState extends State<Home> {
   Iterable<dynamic> hiveContacts = [];
   Iterable<dynamic> hiveConnections = [];
   Iterable<dynamic> hivePods = [];
+
+  List<double> userPosition = [];
+  String userLocation = 'Not Available';
 
   String addOptionSelected = '';
   String searchText = '';
@@ -98,12 +103,17 @@ class _HomeState extends State<Home> {
   EncryptionManager encrypter = EncryptionManager();
 
   HiveAPI hiveApi = HiveAPI();
+  UserManagement userManagement = UserManagement();
 
   bool _isAddButtonVisible = true;
 
   Future<void> _askPermissions() async {
     PermissionStatus permissionStatus = await _getLocationPermission();
+    print('checking status');
+    print(permissionStatus);
     if (permissionStatus == PermissionStatus.granted) {
+      print('granted!!!!!!');
+      updateUserLocation();
     } else {
       _handleInvalidPermissions(permissionStatus);
     }
@@ -134,6 +144,25 @@ class _HomeState extends State<Home> {
     } else {
       return permission;
     }
+  }
+
+  void updateUserLocation() async {
+    Position currPosition = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+    bool servicestatus = await Geolocator.isLocationServiceEnabled();
+    // Position currPosition = Position(longitude: longitude, latitude: latitude, timestamp: timestamp, accuracy: accuracy, altitude: altitude, heading: heading, speed: speed, speedAccuracy: speedAccuracy)
+    if (servicestatus) {
+      print("GPS service is enabled");
+    } else {
+      print("GPS service is disabled.");
+    }
+    print('okay am i updatring location');
+    print(currPosition);
+    Map userLocation = await userManagement.updateUserLocation(currPosition);
+    setState(() {
+      userPosition = userLocation['position'];
+      userLocation = userLocation['location'];
+    });
   }
 
   void _onPanelOpened(option) {

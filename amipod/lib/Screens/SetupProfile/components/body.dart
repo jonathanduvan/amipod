@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'package:amipod/Screens/CreatePin/components/create_pin_screen.dart';
 import 'package:amipod/Screens/SetupProfile/components/background.dart';
 import 'package:flutter/material.dart';

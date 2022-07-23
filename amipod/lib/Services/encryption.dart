@@ -27,7 +27,7 @@ class EncryptionManager {
     return Crypt(cryptFormatHash).match(enteredPassword);
   }
 
-  encryptData(String data) {
+  String encryptData(String data) {
     print("data: $data");
     print("iv: $iv");
     print("key: $encryptionKey");
