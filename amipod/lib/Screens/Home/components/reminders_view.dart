@@ -18,21 +18,6 @@ class _RemindersViewState extends State<RemindersView> {
   @override
   void initState() {
     super.initState();
-    refreshContacts();
-  }
-
-  Future<void> refreshContacts() async {
-    // Load without thumbnails initially.
-    var contacts = (await ContactsService.getContacts());
-//      var contacts = (await ContactsService.getContactsForPhone("8554964652"))
-//          ;
-    setState(() {
-      _contacts = contacts;
-    });
-
-    // Lazy load thumbnails after rendering initial contacts.
-    // for (final contact in contacts) {
-    // }
   }
 
   Widget build(BuildContext context) {
@@ -40,45 +25,71 @@ class _RemindersViewState extends State<RemindersView> {
         MediaQuery.of(context).size; //provides total height and width of screen
 
     return Background(
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: ListView(
+            padding: const EdgeInsets.only(top: 10.0),
             children: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: Text('Go To Start'),
-            // TODO: Add style to button
-          ),
-          Text('${widget.currentIndex} is the current page'),
-          SafeArea(
-            child: _contacts != null
-                ? ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    shrinkWrap: true,
-                    itemCount: _contacts.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      Contact c = _contacts.elementAt(index);
-                      return ListTile(
-                        onTap: () {},
-                        leading: (c.avatar != null && c.avatar?.isEmpty == true)
-                            ? CircleAvatar(
-                                backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(child: Text(c.initials())),
-                        title: Text(c.displayName ?? ""),
-                      );
-                    },
-                  )
-                : Center(
-                    child: CircularProgressIndicator(),
-                  ),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[Spacer()],
-          ),
+          Container(
+              color: Colors.white,
+              width: size.width * .95,
+              height: size.height * .40,
+              child: Text(
+                "No Reminders to Display",
+                style: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 12.0,
+                ),
+              )
+              //   child: Column(
+              //           mainAxisAlignment: MainAxisAlignment.center,
+              //           children: <Widget>[
+              //               SafeArea(
+              //                 child: checkList(widget.hiveConnections!)
+              //                     ? SizedBox(
+              //                         height: size.height * .40,
+              //                         child: ListView.builder(
+              //                           scrollDirection: Axis.vertical,
+              //                           shrinkWrap: true,
+              //                           itemCount: widget.hiveConnections!.length,
+              //                           itemBuilder: (BuildContext context, int index) {
+              //                             ConnectionModel c =
+              //                                 widget.hiveConnections!.elementAt(index);
+
+              //                             return Card(
+              //                               elevation: 6,
+              //                               color: dipityBlack,
+              //                               margin: EdgeInsets.all(10),
+              //                               child: ListTile(
+              //                                 onTap: () {},
+              //                                 leading: (c.avatar != null &&
+              //                                         c.avatar?.isEmpty == true)
+              //                                     ? CircleAvatar(
+              //                                         backgroundImage:
+              //                                             MemoryImage(c.avatar!))
+              //                                     : CircleAvatar(
+              //                                         child: Text(
+              //                                         c.initials,
+              //                                         style: TextStyle(
+              //                                             color: Colors.black),
+              //                                       )),
+              //                                 title: Text(c.name),
+              //                               ),
+              //                             );
+              //                           },
+              //                         ))
+              //                     : Center(
+              //                         child: checkTimer()
+              //                             ? Text(
+              //                                 "No Connections to Display",
+              //                                 style: TextStyle(
+              //                                   fontWeight: FontWeight.normal,
+              //                                   fontSize: 12.0,
+              //                                 ),
+              //                               )
+              //                             : CircularProgressIndicator(),
+              //                       ),
+              //               ),
+              //             ])
+              ),
         ]));
   }
 }

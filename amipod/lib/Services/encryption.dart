@@ -28,10 +28,6 @@ class EncryptionManager {
   }
 
   String encryptData(String data) {
-    print("data: $data");
-    print("iv: $iv");
-    print("key: $encryptionKey");
-
     final encrypter = Encrypter(AES(encryptionKey));
     final encrypted = encrypter.encrypt(
       data,

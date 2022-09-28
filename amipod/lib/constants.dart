@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 const primaryColor = Color(0xFF1DD3B0);
-const backgroundColor = Color(0xFF003E1F);
+const backgroundColor = Color(0xFF161F20);
 const dipityPurple = Color(0xFF7E2E84);
 const podOrange = Color(0xFFF97068);
 const dipityBlack = Color(0xFF22242F);

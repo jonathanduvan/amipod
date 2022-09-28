@@ -1,43 +1,21 @@
 import 'package:amipod/HiveModels/contact_model.dart';
+import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Services/encryption.dart';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Services/hive_api.dart';
 import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 
-Widget addPanelForm(
-    ScrollController sc,
-    String option,
-    Iterable<dynamic> hiveContacts,
-    Iterable<dynamic> hiveConnections,
-    EncryptionManager encrypter,
-    Box podsBox,
-    Box connectionsBox,
-    Box contactsBox,
-    VoidCallback callback) {
+Widget addPanelForm(ScrollController sc, String option) {
   var podForm = 'New Pod';
   var reminderForm = 'New Reminder';
   late Widget form;
   if (option == podForm) {
-    form = createPodForm(
-        option: podForm,
-        hiveContacts: hiveContacts,
-        hiveConnections: hiveConnections,
-        encrypter: encrypter,
-        podsBox: podsBox,
-        connectionsBox: connectionsBox,
-        contactsBox: contactsBox,
-        onCreatePod: callback);
+    form = createPodForm(option: podForm);
   } else if (option == reminderForm) {
-    form = createPodForm(
-        option: reminderForm,
-        hiveContacts: hiveContacts,
-        hiveConnections: hiveConnections,
-        encrypter: encrypter,
-        podsBox: podsBox,
-        connectionsBox: connectionsBox,
-        contactsBox: contactsBox,
-        onCreatePod: callback);
+    form = createPodForm(option: reminderForm);
   }
 
   if (option == "") {
@@ -85,23 +63,7 @@ Widget addPanelForm(
 
 class createPodForm extends StatefulWidget {
   final String option;
-  final Iterable<dynamic> hiveContacts;
-  final Iterable<dynamic> hiveConnections;
-  final EncryptionManager encrypter;
-  final Box podsBox;
-  final Box connectionsBox;
-  final Box contactsBox;
-  final VoidCallback onCreatePod;
-  const createPodForm(
-      {Key? panelKey,
-      required this.option,
-      required this.hiveContacts,
-      required this.hiveConnections,
-      required this.encrypter,
-      required this.podsBox,
-      required this.connectionsBox,
-      required this.contactsBox,
-      required this.onCreatePod})
+  const createPodForm({Key? panelKey, required this.option})
       : super(key: panelKey);
 
   @override
@@ -130,8 +92,13 @@ class _createPodForm extends State<createPodForm> {
   }
 
   bool createPod() {
-    return hiveApi.createAndAddPod(widget.encrypter, widget.podsBox,
-        widget.contactsBox, widget.connectionsBox, selectedContacts, title);
+    var newPod = Provider.of<ConnectionsContactsModel>(context, listen: false)
+        .addPod(selectedContacts, title);
+
+    if (newPod is PodModel) {
+      return true;
+    }
+    return false;
   }
 
   void addToPod(ContactModel contact) {
@@ -160,6 +127,16 @@ class _createPodForm extends State<createPodForm> {
 
   @override
   Widget build(BuildContext context) {
+    Iterable<dynamic> hiveContacts =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hiveContacts);
+    Iterable<dynamic> hiveConnections =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hiveConnections);
+    Iterable<dynamic> hivePods =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hivePods);
+
     return Container(
       padding: const EdgeInsets.only(left: 24.0, right: 24.0),
       height: 1000,
@@ -274,13 +251,13 @@ class _createPodForm extends State<createPodForm> {
                     ),
                   ]),
               child: SafeArea(
-                child: checkList(widget.hiveContacts)
+                child: checkList(hiveContacts)
                     ? ListView.builder(
                         scrollDirection: Axis.vertical,
                         shrinkWrap: true,
-                        itemCount: widget.hiveContacts.length,
+                        itemCount: hiveContacts.length,
                         itemBuilder: (BuildContext context, int index) {
-                          ContactModel c = widget.hiveContacts.elementAt(index);
+                          ContactModel c = hiveContacts.elementAt(index);
 
                           return Card(
                             elevation: 6,
@@ -334,7 +311,6 @@ class _createPodForm extends State<createPodForm> {
               onPressed: () {
                 bool podCreated = createPod();
                 if (podCreated) {
-                  widget.onCreatePod;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('New Pod Created!')),
                   );

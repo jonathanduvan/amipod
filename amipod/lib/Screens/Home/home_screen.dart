@@ -10,6 +10,7 @@ import 'package:amipod/Screens/Login/login_screen.dart';
 import 'package:amipod/Services/encryption.dart';
 import 'package:amipod/Services/hive_api.dart';
 import 'package:amipod/Services/secure_storage.dart';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/Services/user_management.dart';
 import 'package:amipod/constants.dart';
@@ -21,6 +22,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
@@ -28,14 +30,8 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'components/add_panel.dart';
 
 class Home extends StatefulWidget {
-  final Box contactsBox;
-  final Box connectionsBox;
-  final Box podsBox;
   const Home({
     Key? key,
-    required this.contactsBox,
-    required this.connectionsBox,
-    required this.podsBox,
   }) : super(key: key);
   @override
   State<Home> createState() => _HomeState();
@@ -44,21 +40,6 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _selectedIndex = 0;
   bool displayMap = false;
-  List<Contact> allContacts = [];
-  List<LatLng> allContactLocations = []; // Will need to be a widget later
-
-  List<ConnectedContact> connectedContacts = [];
-  List<ContactModel> connections = [];
-
-  List<UnconnectedContact> unconnectedContacts = [];
-  List<ContactModel> contacts = [];
-
-  List<Pod> allPods = [];
-  List<PodModel> pods = [];
-
-  Iterable<dynamic> hiveContacts = [];
-  Iterable<dynamic> hiveConnections = [];
-  Iterable<dynamic> hivePods = [];
 
   List<double> userPosition = [];
   String userLocation = 'Not Available';
@@ -109,10 +90,8 @@ class _HomeState extends State<Home> {
 
   Future<void> _askPermissions() async {
     PermissionStatus permissionStatus = await _getLocationPermission();
-    print('checking status');
     print(permissionStatus);
     if (permissionStatus == PermissionStatus.granted) {
-      print('granted!!!!!!');
       updateUserLocation();
     } else {
       _handleInvalidPermissions(permissionStatus);
@@ -158,10 +137,11 @@ class _HomeState extends State<Home> {
     }
     print('okay am i updatring location');
     print(currPosition);
-    Map userLocation = await userManagement.updateUserLocation(currPosition);
-    setState(() {
-      userPosition = userLocation['position'];
-      userLocation = userLocation['location'];
+    userManagement.updateUserLocation(currPosition).then((userLocation) {
+      setState(() {
+        userPosition = userLocation[0];
+        userLocation = userLocation[1];
+      });
     });
   }
 
@@ -199,6 +179,7 @@ class _HomeState extends State<Home> {
 //          ;
 
     if (rawContacts != null) {
+      // Update logic to work with provider and hive entirely
       _getAllContacts(rawContacts);
     }
   }
@@ -263,43 +244,20 @@ class _HomeState extends State<Home> {
     // Lazy load thumbnails after rendering initial contacts.
     //TODO: Function to check if contact is connected or not goes here
     var mapContacts = await _updateConnectedContacts(contacts);
+    Provider.of<ConnectionsContactsModel>(context, listen: false)
+        .updateContacts(mapContacts.unconnected!);
 
-    if (hiveApi.areBoxesOpen(
-        [widget.contactsBox, widget.connectionsBox, widget.podsBox])) {
-      var hiveCons = hiveApi.getAllContacts(widget.contactsBox);
-      var hiveConnects = hiveApi.getAllConnections(widget.connectionsBox);
-
-      setState(() {
-        connectedContacts = mapContacts.connected!;
-        unconnectedContacts = mapContacts.unconnected!;
-        hiveContacts = hiveCons;
-        hiveConnections = hiveConnects;
-      });
-
-      updateContacts();
-    }
-  }
-
-  void _getAllPods() {
-    var podsCreated = hiveApi.getAllPods(widget.podsBox);
-    if ((podsCreated.isEmpty) == false) {
-      setState(() {
-        hivePods = podsCreated;
-      });
-    }
+    Provider.of<ConnectionsContactsModel>(context, listen: false).contacts;
+    Provider.of<ConnectionsContactsModel>(context, listen: false).connections;
+    Provider.of<ConnectionsContactsModel>(context, listen: false).pods;
   }
 
   @override
   void initState() {
     super.initState();
-    updateSharedPreferences();
-    refreshContacts();
-    _getAllPods();
-    _askPermissions();
-  }
-
-  void updateSharedPreferences() {
     updateLoginState(true);
+    refreshContacts();
+    _askPermissions();
   }
 
   Future<bool> updateLoginState(bool login) async {
@@ -335,28 +293,20 @@ class _HomeState extends State<Home> {
     });
   }
 
-  void updateContacts() {
-    if (widget.contactsBox.isEmpty) {
-      print("i'm empty like my soul");
-      addAllContacts();
-    }
-    // else {
-    //   hiveApi.addMissingContacts(
-    //       encrypter, contactsBox, connectionsBox, unconnectedContacts);
-    // }
-  }
-
-  void addAllContacts() {
-    for (var element in unconnectedContacts) {
-      hiveApi.createAndAddContact(encrypter, widget.contactsBox, element);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    _panelHeightOpen = MediaQuery.of(context).size.height * .80;
+    _panelHeightOpen = MediaQuery.of(context).size.height;
+
+    Box? contactsBox = context.select<ConnectionsContactsModel, Box?>(
+        (ccModel) => ccModel.contactsBox);
+    Box? connectionsBox = context.select<ConnectionsContactsModel, Box?>(
+        (ccModel) => ccModel.connectionsBox);
+    Box? podsBox = context
+        .select<ConnectionsContactsModel, Box?>((ccModel) => ccModel.podsBox);
+
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       drawer: Drawer(
         child: ListView(
           // Important: Remove any padding from the ListView.
@@ -364,9 +314,12 @@ class _HomeState extends State<Home> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: backgroundColor,
               ),
-              child: Text('Drawer Header'),
+              child: Text(
+                'Drawer Header',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
             ListTile(
               title: const Text('Profile'),
@@ -403,37 +356,37 @@ class _HomeState extends State<Home> {
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(50.0),
+          preferredSize: Size.fromHeight(0),
           child: Column(children: <Widget>[
-            TextField(
-              style: TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.clear),
-                    onPressed: () {
-                      /* Clear the search field */
-                    },
-                  ),
-                  hintText: 'Search...',
-                  hintStyle: TextStyle(color: Colors.white),
-                  border: InputBorder.none),
-              onChanged: (value) {
-                print(value);
-                setState(() {
-                  searchText = value;
-                });
-              },
-            ),
-            Row(
-              children: pageSearchTags[_selectedIndex]
-                  .map((tagModel) => tagChip(
-                        tagModel: tagModel,
-                        action: 'Remove',
-                      ))
-                  .toSet()
-                  .toList(),
-            )
+            // TextField(
+            //   style: TextStyle(color: Colors.white),
+            //   decoration: InputDecoration(
+            //       prefixIcon: Icon(Icons.search),
+            //       suffixIcon: IconButton(
+            //         icon: Icon(Icons.clear),
+            //         onPressed: () {
+            //           /* Clear the search field */
+            //         },
+            //       ),
+            //       hintText: 'Search...',
+            //       hintStyle: TextStyle(color: Colors.white),
+            //       border: InputBorder.none),
+            //   onChanged: (value) {
+            //     print(value);
+            //     setState(() {
+            //       searchText = value;
+            //     });
+            //   },
+            // ),
+            // Row(
+            //   children: pageSearchTags[_selectedIndex]
+            //       .map((tagModel) => tagChip(
+            //             tagModel: tagModel,
+            //             action: 'Remove',
+            //           ))
+            //       .toSet()
+            //       .toList(),
+            // )
           ]),
         ),
         actions: <Widget>[
@@ -472,20 +425,13 @@ class _HomeState extends State<Home> {
         maxHeight: _panelHeightOpen,
         minHeight: _panelHeightClosed,
         body: displayMap
-            ? MapView(contacts: connectedContacts)
+            ? MapView()
             : IndexedStack(
                 index: _selectedIndex,
                 children: [
                   // HomeView(currentIndex: _selectedIndex),
                   ConnectionsView(
-                      currentIndex: _selectedIndex,
-                      contactsBox: widget.contactsBox,
-                      connectionsBox: widget.connectionsBox,
-                      podsBox: widget.podsBox,
-                      hiveContacts: hiveContacts,
-                      hiveConnections: hiveConnections,
-                      hivePods: hivePods,
-                      searchText: searchText),
+                      currentIndex: _selectedIndex, searchText: searchText),
                   // EventsView(currentIndex: _selectedIndex),
                   RemindersView(currentIndex: _selectedIndex)
                 ],
@@ -513,7 +459,7 @@ class _HomeState extends State<Home> {
                 BottomNavigationBarItem(
                   backgroundColor: backgroundColor,
                   icon: Icon(Icons.alarm),
-                  label: 'Reminders',
+                  label: 'Check-Ins',
                 ),
               ],
               unselectedItemColor: Colors.white,
@@ -529,16 +475,7 @@ class _HomeState extends State<Home> {
     return MediaQuery.removePadding(
         context: context,
         removeTop: true,
-        child: addPanelForm(
-            sc,
-            addOptionSelected,
-            hiveContacts,
-            hiveConnections,
-            encrypter,
-            widget.podsBox,
-            widget.connectionsBox,
-            widget.contactsBox,
-            _getAllPods));
+        child: addPanelForm(sc, addOptionSelected));
   }
 
   Widget tagChip({

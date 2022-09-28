@@ -3,10 +3,12 @@ import 'package:amipod/Screens/Home/home_screen.dart';
 import 'package:amipod/Services/encryption.dart';
 import 'package:amipod/Services/user_management.dart';
 import 'package:amipod/Services/secure_storage.dart';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:hive/hive.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/constants.dart';
+import 'package:provider/provider.dart';
 
 class Body extends StatefulWidget {
   const Body({Key? key}) : super(key: key);
@@ -36,6 +38,7 @@ class _BodyState extends State<Body> {
     // We can't mark this method as async because of the @override
     // You could also make and call an async method that does the following
     encrypter = EncryptionManager();
+    Provider.of<ConnectionsContactsModel>(context, listen: false).setAllBoxes();
   }
 
   Future<String> getEncryptionValues() async {
@@ -52,13 +55,7 @@ class _BodyState extends State<Body> {
 
   void loginToProfile(
       Box<dynamic> contactsBox, Box connectionsBox, Box podsBox) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => Home(
-                contactsBox: contactsBox,
-                connectionsBox: connectionsBox,
-                podsBox: podsBox)));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Home()));
   }
 
   Widget build(BuildContext context) {

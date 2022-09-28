@@ -26,6 +26,7 @@ class UserManagement {
 
   HiveAPI hiveApi = HiveAPI();
   DatabaseAPI dbApi = DatabaseAPI();
+
   Future<List<Box>> checkUserStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     Map<String, String> allValues = await storage.readAllSecureData();
@@ -139,7 +140,6 @@ class UserManagement {
     };
     print('calling set user');
     dbApi.setUser(currKey, encryptedLocation);
-
     return location;
   }
 

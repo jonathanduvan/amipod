@@ -121,8 +121,6 @@ class HiveAPI {
     return noBox;
   }
 
-  // TODO: add connections Functions
-
   // Functions Relating to Pods
 
   Future<Box> createPodsBox(List<int> key) async {
@@ -152,7 +150,7 @@ class HiveAPI {
     return noBox;
   }
 
-  bool createAndAddPod(
+  dynamic createAndAddPod(
       EncryptionManager encrypter,
       Box podsBox,
       Box contactsBox,
@@ -178,10 +176,10 @@ class HiveAPI {
       newPod.contacts!.addAll(podContacts.values);
 
       newPod.save();
-      return true;
+      return newPod;
     }
 
-    return false;
+    return inPods;
   }
 
   addPod(Box podsBox, PodModel pod) {

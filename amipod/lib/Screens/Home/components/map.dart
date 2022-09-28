@@ -1,14 +1,15 @@
 import 'dart:async';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:geocode/geocode.dart';
 
 class MapView extends StatefulWidget {
-  final List<ConnectedContact> contacts;
-  const MapView({Key? key, required this.contacts}) : super(key: key);
+  const MapView({Key? key}) : super(key: key);
   @override
   _MapViewState createState() => _MapViewState();
 }
@@ -56,22 +57,20 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  void _createConnectionMarkers(List<ConnectedContact> contacts) {
-    if (contacts != null) {
-      Set<Marker> newMarkers = List.generate(
-          contacts.length,
-          (i) => Marker(
-                markerId: MarkerId('connection-$i'),
-                position: contacts[i].location!,
-                onTap: () {
-                  _onTappedMarker(contacts[i]);
-                },
-              )).toSet();
+  void _createConnectionMarkers(Iterable<dynamic> contacts) {
+    Set<Marker> newMarkers = {};
 
-      setState(() {
-        _markers.addAll(newMarkers);
-      });
+    for (final contact in contacts) {
+      newMarkers.add(Marker(
+          markerId: MarkerId('connection-$contact.id'),
+          position: contact.location,
+          onTap: () {
+            _onTappedMarker(contact);
+          }));
     }
+    setState(() {
+      _markers.addAll(newMarkers);
+    });
   }
 
   void _createPodMarkers(List<LatLng> locations) {
@@ -88,10 +87,20 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  void createMapCenter(Iterable<dynamic> connections) {}
+
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
 
+    Iterable<dynamic> hiveConnections =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hiveConnections);
+
+    CameraPosition startingCenter = CameraPosition(
+      target: LatLng(37.42796133580664, -122.085749655962),
+      zoom: 7.0,
+    );
     return Scaffold(
       body: SlidingUpPanel(
           panelBuilder: (ScrollController sc) => _panel(sc),
@@ -101,7 +110,7 @@ class _MapViewState extends State<MapView> {
             mapType: MapType.normal,
             initialCameraPosition: _kGooglePlex,
             onMapCreated: (GoogleMapController controller) {
-              _createConnectionMarkers(widget.contacts);
+              _createConnectionMarkers(hiveConnections);
               _controller.complete(controller);
             },
             onCameraMove: (position) {},

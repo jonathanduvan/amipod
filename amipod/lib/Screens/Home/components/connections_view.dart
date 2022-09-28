@@ -4,9 +4,11 @@ import 'package:amipod/HiveModels/connection_model.dart';
 import 'package:amipod/HiveModels/contact_model.dart';
 import 'package:amipod/HiveModels/pod_model.dart';
 import 'package:amipod/Services/hive_api.dart';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:amipod/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Home/components/background.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
@@ -14,27 +16,34 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:amipod/Screens/Home/components/add_button.dart';
 
+import 'package:provider/provider.dart';
+
+const List<Widget> lists = <Widget>[
+  Text('Connections'),
+  Text('Contacts'),
+];
+
 class ConnectionsView extends StatefulWidget {
   final int currentIndex;
 
-  final Box contactsBox;
-  final Box connectionsBox;
-  final Box podsBox;
+  // final Box contactsBox;
+  // final Box connectionsBox;
+  // final Box podsBox;
 
-  final Iterable<dynamic>? hiveContacts;
-  final Iterable<dynamic>? hiveConnections;
-  final Iterable<dynamic>? hivePods;
+  // final Iterable<dynamic>? hiveContacts;
+  // final Iterable<dynamic>? hiveConnections;
+  // final Iterable<dynamic>? hivePods;
 
   final String searchText;
   const ConnectionsView(
       {Key? key,
       required this.currentIndex,
-      required this.contactsBox,
-      required this.connectionsBox,
-      required this.podsBox,
-      this.hiveContacts,
-      this.hiveConnections,
-      this.hivePods,
+      // required this.contactsBox,
+      // required this.connectionsBox,
+      // required this.podsBox,
+      // this.hiveContacts,
+      // this.hiveConnections,
+      // this.hivePods,
       required this.searchText})
       : super(key: key);
   @override
@@ -47,9 +56,12 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   List<ConnectionModel> connections = [];
   List<PodModel> pods = [];
 
+  final List<bool> _selectedLists = <bool>[true, false];
+
   HiveAPI hiveApi = HiveAPI();
 
   int _start = 10;
+  String page = 'Connections';
   late Timer _timer;
 
   bool checkTimer() {
@@ -77,6 +89,18 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     return searchedPods;
   }
 
+  List<Widget> createPodList(Iterable<dynamic> hivePods) {
+    List<Widget> listings = [];
+
+    hivePods.forEach((element) {
+      print(element);
+      listings
+          .add(IceCreamCard(flavorColor: primaryColor, flavor: element.name));
+    });
+
+    return listings;
+  }
+
   bool checkList(Iterable<dynamic> infoList) {
     if (infoList.isNotEmpty) {
       if (widget.searchText != '') {
@@ -100,6 +124,8 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   @override
   void initState() {
     super.initState();
+    Provider.of<ConnectionsContactsModel>(context, listen: false)
+        .updateConnections();
     _startTimer();
   }
 
@@ -107,6 +133,24 @@ class _ConnectionsViewState extends State<ConnectionsView> {
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
+
+    Box? contactsBox = context.select<ConnectionsContactsModel, Box?>(
+        (ccModel) => ccModel.contactsBox);
+    Box? connectionsBox = context.select<ConnectionsContactsModel, Box?>(
+        (ccModel) => ccModel.connectionsBox);
+    Box? podsBox = context
+        .select<ConnectionsContactsModel, Box?>((ccModel) => ccModel.podsBox);
+
+    Iterable<dynamic> hiveContacts =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hiveContacts);
+    Iterable<dynamic> hiveConnections =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hiveConnections);
+    Iterable<dynamic> hivePods =
+        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+            (ccModel) => ccModel.hivePods);
+
     return Background(
         child: ListView(padding: const EdgeInsets.only(top: 10.0), children: <
             Widget>[
@@ -130,177 +174,171 @@ class _ConnectionsViewState extends State<ConnectionsView> {
       ),
       Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
         SafeArea(
-          child: checkList(widget.hivePods!)
-              ? ListView.builder(
-                  scrollDirection: Axis.vertical,
-                  shrinkWrap: true,
-                  itemCount: widget.hivePods!.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    PodModel c = widget.hivePods!.elementAt(index);
-                    return Card(
-                      color: dipityBlack,
-                      elevation: 6,
-                      margin: EdgeInsets.all(10),
-                      child: ListTile(
-                        onTap: () {},
-                        leading: (c.avatar != null && c.avatar?.isEmpty == true)
-                            ? CircleAvatar(
-                                backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(
-                                child: Text(
-                                  c.name[0],
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                backgroundColor: podOrange),
-                        title:
-                            Text(c.name, style: TextStyle(color: Colors.white)),
-                      ),
-                    );
-                  },
-                )
-              : Center(
-                  child: Text(
-                    "No Pods to Display",
-                    style: TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 12.0,
+          child: checkList(hivePods)
+              ? Container(
+                  height: size.height * .15,
+                  width: size.width * .80,
+                  child: Center(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(children: createPodList(hivePods)),
                     ),
-                  ),
-                ),
+                  ))
+              : Container(
+                  width: size.width * .95,
+                  child: Center(
+                    child: Text(
+                      "No Pods to Display",
+                      style: TextStyle(
+                        fontWeight: FontWeight.normal,
+                        fontSize: 12.0,
+                      ),
+                    ),
+                  )),
         ),
       ]),
       SizedBox(
         height: 36.0,
       ),
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              "Connections",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-      Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-        SafeArea(
-          child: checkList(widget.hiveConnections!)
-              ? ListView.builder(
-                  scrollDirection: Axis.vertical,
-                  shrinkWrap: true,
-                  itemCount: widget.hiveConnections!.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    ConnectionModel c =
-                        widget.hiveConnections!.elementAt(index);
-
-                    return Card(
-                      elevation: 6,
-                      color: dipityBlack,
-                      margin: EdgeInsets.all(10),
-                      child: ListTile(
-                        onTap: () {},
-                        leading: (c.avatar != null && c.avatar?.isEmpty == true)
-                            ? CircleAvatar(
-                                backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(
-                                child: Text(
-                                c.initials,
-                                style: TextStyle(color: Colors.black),
-                              )),
-                        title: Text(c.name),
-                      ),
-                    );
-                  },
-                )
-              : Center(
-                  child: checkTimer()
-                      ? Text(
-                          "No Connections to Display",
-                          style: TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12.0,
-                          ),
-                        )
-                      : CircularProgressIndicator(),
-                ),
-        ),
-      ]),
-      SizedBox(
-        height: 36.0,
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              "Contacts",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-      Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-        SafeArea(
-          child: checkList(widget.hiveContacts!)
-              ? ListView.builder(
-                  scrollDirection: Axis.vertical,
-                  shrinkWrap: true,
-                  itemCount: widget.hiveContacts!.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    ContactModel c = widget.hiveContacts!.elementAt(index);
-                    return Card(
-                      elevation: 6,
-                      margin: EdgeInsets.all(10),
-                      color: dipityBlack,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(color: Colors.white, width: .5),
-                      ),
-                      child: ListTile(
-                        onTap: () {},
-                        leading: (c.avatar != null && c.avatar?.isEmpty == true)
-                            ? CircleAvatar(
-                                backgroundImage: MemoryImage(c.avatar!))
-                            : CircleAvatar(
-                                child: Text(
-                                  c.initials,
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                                backgroundColor: primaryColor,
-                              ),
-                        title:
-                            Text(c.name, style: TextStyle(color: Colors.white)),
-                      ),
-                    );
-                  },
-                )
-              : Center(
-                  child: checkTimer()
-                      ? Text(
-                          "No Contacts to Display",
-                          style: TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12.0,
-                          ),
-                        )
-                      : CircularProgressIndicator()),
-        ),
-      ]),
       Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Spacer(),
+          ToggleButtons(
+            direction: Axis.horizontal,
+            onPressed: (int index) {
+              setState(() {
+                // The button that is tapped is set to true, and the others to false.
+                for (int i = 0; i < _selectedLists.length; i++) {
+                  _selectedLists[i] = i == index;
+                }
+              });
+            },
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            selectedBorderColor: primaryColor,
+            selectedColor: backgroundColor,
+            fillColor: primaryColor,
+            color: backgroundColor,
+            constraints: const BoxConstraints(
+              minHeight: 40.0,
+              minWidth: 100.0,
+            ),
+            isSelected: _selectedLists,
+            children: lists,
+          ),
         ],
+      ),
+      Container(
+        color: Colors.white,
+        width: size.width * .95,
+        height: size.height * .40,
+        child: _selectedLists[0] == true
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                    SafeArea(
+                      child: checkList(hiveConnections)
+                          ? SizedBox(
+                              height: size.height * .40,
+                              child: ListView.builder(
+                                scrollDirection: Axis.vertical,
+                                shrinkWrap: true,
+                                itemCount: hiveConnections.length,
+                                itemBuilder: (BuildContext context, int index) {
+                                  ConnectionModel c =
+                                      hiveConnections.elementAt(index);
+
+                                  return Card(
+                                    elevation: 6,
+                                    color: backgroundColor,
+                                    margin: EdgeInsets.all(10),
+                                    child: ListTile(
+                                      onTap: () {},
+                                      leading: (c.avatar != null &&
+                                              c.avatar?.isEmpty == true)
+                                          ? CircleAvatar(
+                                              backgroundImage:
+                                                  MemoryImage(c.avatar!))
+                                          : CircleAvatar(
+                                              child: Text(
+                                              c.initials,
+                                              style: TextStyle(
+                                                  color: Colors.black),
+                                            )),
+                                      title: Text(c.name),
+                                    ),
+                                  );
+                                },
+                              ))
+                          : Center(
+                              child: checkTimer()
+                                  ? Text(
+                                      "No Connections to Display",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 12.0,
+                                      ),
+                                    )
+                                  : CircularProgressIndicator(),
+                            ),
+                    ),
+                  ])
+            : Column(mainAxisAlignment: MainAxisAlignment.center, children: <
+                Widget>[
+                SafeArea(
+                  child: checkList(hiveContacts)
+                      ? Container(
+                          color: Colors.white,
+                          width: size.width * .95,
+                          height: size.height * .40,
+                          child: ListView.builder(
+                            scrollDirection: Axis.vertical,
+                            shrinkWrap: true,
+                            itemCount: hiveContacts.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              ContactModel c = hiveContacts.elementAt(index);
+                              return Card(
+                                elevation: 6,
+                                margin: EdgeInsets.all(10),
+                                color: backgroundColor,
+                                shape: RoundedRectangleBorder(
+                                  side: BorderSide(
+                                      color: Colors.white, width: .5),
+                                ),
+                                child: ListTile(
+                                  onTap: () {},
+                                  leading: (c.avatar != null &&
+                                          c.avatar?.isEmpty == true)
+                                      ? CircleAvatar(
+                                          backgroundImage:
+                                              MemoryImage(c.avatar!))
+                                      : CircleAvatar(
+                                          child: Text(
+                                            c.initials,
+                                            style:
+                                                TextStyle(color: Colors.black),
+                                          ),
+                                          backgroundColor: primaryColor,
+                                        ),
+                                  title: Text(c.name,
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              );
+                            },
+                          ))
+                      : Center(
+                          child: checkTimer()
+                              ? Text(
+                                  "No Contacts to Display",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 12.0,
+                                  ),
+                                )
+                              : CircularProgressIndicator()),
+                ),
+              ]),
       ),
     ]));
   }
@@ -390,5 +428,56 @@ class _PermissionState extends State<PermissionWidget> {
     setState(() {
       _permissionStatus = status;
     });
+  }
+}
+
+class IceCreamCard extends StatelessWidget {
+  const IceCreamCard({
+    this.flavorColor = primaryColor,
+    this.flavor = 'Flavor Name',
+  });
+  final Color flavorColor;
+  final String flavor;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xffeeeeee), width: 2.0),
+        color: backgroundColor,
+        borderRadius: BorderRadius.all(Radius.circular(8.0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white10,
+            blurRadius: 4,
+            spreadRadius: 2,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      margin: EdgeInsets.all(8),
+      height: 200,
+      width: 100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+              child: SvgPicture.asset(
+            'assets/images/dipity.svg',
+            width: 80,
+            height: 80,
+          )),
+          SizedBox(
+            height: 10.0,
+          ),
+          Text(
+            flavor,
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12.0,
+                color: Colors.white),
+          ),
+        ],
+      ),
+    );
   }
 }

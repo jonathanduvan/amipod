@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Background extends StatelessWidget {
   final Widget child;
@@ -24,9 +25,10 @@ class Background extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 150.0),
-            child: Image.asset(
-              "assets/images/dipity_diego.png",
-              scale: 4,
+            child: SvgPicture.asset(
+              'assets/images/dipity.svg',
+              width: 180,
+              height: 180,
             ),
           ),
           child,

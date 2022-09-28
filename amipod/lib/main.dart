@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:amipod/Screens/Login/login_screen.dart';
+import 'package:amipod/StateManagement/connections_contacts_model.dart';
 import 'package:flutter/material.dart';
 import 'package:amipod/Screens/Welcome/welcome_screen.dart';
 import 'package:amipod/constants.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +37,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     startTimer();
   }
@@ -83,11 +84,19 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Amipod',
-      theme: ThemeData(
-          primaryColor: primaryColor, scaffoldBackgroundColor: backgroundColor),
-      home: SplashScreen(),
-    );
+    return MultiProvider(
+        providers: [
+          // In this sample app, CatalogModel never changes, so a simple Provider
+          // is sufficient.
+          ChangeNotifierProvider<ConnectionsContactsModel>(
+              create: (context) => ConnectionsContactsModel()),
+        ],
+        child: MaterialApp(
+          title: 'Amipod',
+          theme: ThemeData(
+              primaryColor: primaryColor,
+              scaffoldBackgroundColor: backgroundColor),
+          home: SplashScreen(),
+        ));
   }
 }
