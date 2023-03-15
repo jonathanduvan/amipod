@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:crypt/crypt.dart';
 import 'package:encrypt/encrypt.dart';
-import 'package:amipod/Services/secure_storage.dart';
+import 'package:dipity/Services/secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EncryptionManager {
@@ -37,7 +37,7 @@ class EncryptionManager {
   }
 
   String decryptData(String data) {
-    final encrypter = Encrypter(AES(encryptionKey, mode: AESMode.cbc));
+    final encrypter = Encrypter(AES(encryptionKey));
     final decrypted = encrypter.decrypt(Encrypted.from64(data), iv: iv);
     return decrypted;
   }

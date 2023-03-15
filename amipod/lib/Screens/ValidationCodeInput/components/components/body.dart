@@ -1,8 +1,8 @@
-import 'package:amipod/Screens/ValidationCodeInput/components/components/background.dart';
-import 'package:amipod/Screens/SetupProfile/setup_profile_screen.dart';
+import 'package:dipity/Screens/ValidationCodeInput/components/components/background.dart';
+import 'package:dipity/Screens/SetupProfile/setup_profile_screen.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/services.dart';
 
 class Body extends StatefulWidget {

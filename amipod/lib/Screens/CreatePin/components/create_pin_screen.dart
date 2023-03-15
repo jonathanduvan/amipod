@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/CreatePin/components/components/body.dart';
+import 'package:dipity/Screens/CreatePin/components/components/body.dart';
 import 'package:flutter/material.dart';
 
 class CreatePin extends StatelessWidget {

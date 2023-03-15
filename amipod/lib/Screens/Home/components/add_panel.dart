@@ -1,10 +1,10 @@
-import 'package:amipod/HiveModels/contact_model.dart';
-import 'package:amipod/HiveModels/pod_model.dart';
-import 'package:amipod/Services/encryption.dart';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Services/encryption.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Services/hive_api.dart';
+import 'package:dipity/Services/hive_api.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 

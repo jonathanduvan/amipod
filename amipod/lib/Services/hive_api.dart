@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'package:amipod/HiveModels/connection_model.dart';
-import 'package:amipod/HiveModels/contact_model.dart';
-import 'package:amipod/HiveModels/pod_model.dart';
-import 'package:amipod/Services/encryption.dart';
+import 'package:dipity/HiveModels/connection_model.dart';
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Services/encryption.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
@@ -119,6 +119,25 @@ class HiveAPI {
     }
     Iterable<dynamic> noBox = [];
     return noBox;
+  }
+
+  void addConnections(EncryptionManager encrypter, Box connectionsBox,
+      List<ConnectedContact> connContacts) {
+    connContacts.forEach((element) {
+      String id = encrypter.encryptData(element.phone);
+      var connection = ConnectionModel(
+          id: id,
+          name: element.name,
+          initials: element.initials,
+          phone: element.phone,
+          lat: element.location!.latitude.toString(),
+          long: element.location!.longitude.toString(),
+          city: element.city);
+      if (element.avatar != null && element.avatar?.isEmpty == true) {
+        connection.avatar = element.avatar;
+      }
+      connectionsBox.put(id, connection);
+    });
   }
 
   // Functions Relating to Pods

@@ -1,20 +1,20 @@
 import 'dart:async';
 
-import 'package:amipod/HiveModels/connection_model.dart';
-import 'package:amipod/HiveModels/contact_model.dart';
-import 'package:amipod/HiveModels/pod_model.dart';
-import 'package:amipod/Services/hive_api.dart';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/HiveModels/connection_model.dart';
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Services/hive_api.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/Home/components/background.dart';
+import 'package:dipity/Screens/Home/components/background.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:amipod/Screens/Home/components/add_button.dart';
+import 'package:dipity/Screens/Home/components/add_button.dart';
 
 import 'package:provider/provider.dart';
 
@@ -70,9 +70,11 @@ class _ConnectionsViewState extends State<ConnectionsView> {
 
   void _startTimer() {
     Timer(const Duration(seconds: 7), () {
-      setState(() {
-        _start = 0;
-      });
+      if (mounted) {
+        setState(() {
+          _start = 0;
+        });
+      }
     });
   }
 
@@ -234,56 +236,55 @@ class _ConnectionsViewState extends State<ConnectionsView> {
         width: size.width * .95,
         height: size.height * .40,
         child: _selectedLists[0] == true
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                    SafeArea(
-                      child: checkList(hiveConnections)
-                          ? SizedBox(
-                              height: size.height * .40,
-                              child: ListView.builder(
-                                scrollDirection: Axis.vertical,
-                                shrinkWrap: true,
-                                itemCount: hiveConnections.length,
-                                itemBuilder: (BuildContext context, int index) {
-                                  ConnectionModel c =
-                                      hiveConnections.elementAt(index);
+            ? Column(mainAxisAlignment: MainAxisAlignment.center, children: <
+                Widget>[
+                SafeArea(
+                  child: checkList(hiveConnections)
+                      ? SizedBox(
+                          height: size.height * .40,
+                          child: ListView.builder(
+                            scrollDirection: Axis.vertical,
+                            shrinkWrap: true,
+                            itemCount: hiveConnections.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              ConnectionModel c =
+                                  hiveConnections.elementAt(index);
 
-                                  return Card(
-                                    elevation: 6,
-                                    color: backgroundColor,
-                                    margin: EdgeInsets.all(10),
-                                    child: ListTile(
-                                      onTap: () {},
-                                      leading: (c.avatar != null &&
-                                              c.avatar?.isEmpty == true)
-                                          ? CircleAvatar(
-                                              backgroundImage:
-                                                  MemoryImage(c.avatar!))
-                                          : CircleAvatar(
-                                              child: Text(
-                                              c.initials,
-                                              style: TextStyle(
-                                                  color: Colors.black),
-                                            )),
-                                      title: Text(c.name),
-                                    ),
-                                  );
-                                },
-                              ))
-                          : Center(
-                              child: checkTimer()
-                                  ? Text(
-                                      "No Connections to Display",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.normal,
-                                        fontSize: 12.0,
-                                      ),
-                                    )
-                                  : CircularProgressIndicator(),
-                            ),
-                    ),
-                  ])
+                              return Card(
+                                elevation: 6,
+                                color: backgroundColor,
+                                margin: EdgeInsets.all(10),
+                                child: ListTile(
+                                  onTap: () {},
+                                  leading: (c.avatar != null &&
+                                          c.avatar?.isEmpty == true)
+                                      ? CircleAvatar(
+                                          backgroundImage:
+                                              MemoryImage(c.avatar!))
+                                      : CircleAvatar(
+                                          child: Text(
+                                          c.initials,
+                                          style: TextStyle(color: Colors.white),
+                                        )),
+                                  title: Text(c.name,
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              );
+                            },
+                          ))
+                      : Center(
+                          child: checkTimer()
+                              ? Text(
+                                  "No Connections to Display",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.normal,
+                                    fontSize: 12.0,
+                                  ),
+                                )
+                              : CircularProgressIndicator(),
+                        ),
+                ),
+              ])
             : Column(mainAxisAlignment: MainAxisAlignment.center, children: <
                 Widget>[
                 SafeArea(

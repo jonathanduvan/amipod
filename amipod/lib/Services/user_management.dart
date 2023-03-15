@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:amipod/constants.dart';
+import 'package:dipity/constants.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:geocode/geocode.dart';
 import 'package:geocoding/geocoding.dart';
@@ -11,7 +11,7 @@ import 'package:hive/hive.dart';
 import 'hive_api.dart';
 import 'secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:amipod/Services/database_api.dart';
+import 'package:dipity/Services/database_api.dart';
 import 'encryption.dart';
 
 class UserManagement {
@@ -147,7 +147,6 @@ class UserManagement {
 
   // refreshContacts();
   // _getAllPods();
-
 }
 
 

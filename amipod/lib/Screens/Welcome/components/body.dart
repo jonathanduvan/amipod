@@ -1,7 +1,7 @@
-import 'package:amipod/Screens/RegisterPhoneNumber/register_phone_number.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/Screens/RegisterPhoneNumber/register_phone_number.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/Welcome/components/background.dart';
+import 'package:dipity/Screens/Welcome/components/background.dart';
 
 class Body extends StatelessWidget {
   @override

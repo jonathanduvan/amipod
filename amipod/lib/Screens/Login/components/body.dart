@@ -1,13 +1,13 @@
-import 'package:amipod/Screens/Login/components/background.dart';
-import 'package:amipod/Screens/Home/home_screen.dart';
-import 'package:amipod/Services/encryption.dart';
-import 'package:amipod/Services/secure_storage.dart';
-import 'package:amipod/Services/user_management.dart';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/Screens/Login/components/background.dart';
+import 'package:dipity/Screens/Home/home_screen.dart';
+import 'package:dipity/Services/encryption.dart';
+import 'package:dipity/Services/secure_storage.dart';
+import 'package:dipity/Services/user_management.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
 import 'package:hive/hive.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/constants.dart';
 import 'package:provider/provider.dart';
 
 class Body extends StatefulWidget {

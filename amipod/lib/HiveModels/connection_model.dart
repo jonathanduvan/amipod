@@ -12,7 +12,8 @@ class ConnectionModel extends HiveObject {
       required this.initials,
       required this.phone,
       required this.lat,
-      required this.long});
+      required this.long,
+      this.city});
   @HiveField(0)
   String id;
 

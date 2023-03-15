@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/Home/components/background.dart';
+import 'package:dipity/Screens/Home/components/background.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:amipod/Screens/Home/components/add_button.dart';
+import 'package:dipity/Screens/Home/components/add_button.dart';
 
 class EventsView extends StatefulWidget {
   final int currentIndex;

@@ -1,6 +1,11 @@
 import 'dart:async';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
-import 'package:amipod/constants.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
+
+import 'package:dipity/HiveModels/connection_model.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -9,7 +14,8 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:geocode/geocode.dart';
 
 class MapView extends StatefulWidget {
-  const MapView({Key? key}) : super(key: key);
+  final List<double> userPosition;
+  const MapView({Key? key, required this.userPosition}) : super(key: key);
   @override
   _MapViewState createState() => _MapViewState();
 }
@@ -17,7 +23,7 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
   Set<Marker> _markers = {};
-  ConnectedContact? selectedContact;
+  ConnectionModel? selectedContact;
 
   final double _initFabHeight = 120.0;
   double _fabHeight = 0;
@@ -28,10 +34,7 @@ class _MapViewState extends State<MapView> {
 
   Completer<GoogleMapController> _controller = Completer();
 
-  static final CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 7.0,
-  );
+  final PanelController _pc = PanelController();
 
   BorderRadiusGeometry radius = BorderRadius.only(
     topLeft: Radius.circular(24.0),
@@ -48,25 +51,49 @@ class _MapViewState extends State<MapView> {
   //   controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
   // }
 
-  void _onTappedMarker(contact) {
-    if (contact.runtimeType == ConnectedContact) {
-      setState(() {
-        selectedContact = contact;
-        _panelHeightClosed = 150.0;
-      });
-    }
+  void _onTappedMarker(ConnectionModel contact) {
+    print(contact.city);
+    _pc.open();
+    setState(() {
+      selectedContact = contact;
+      _panelHeightClosed = 150.0;
+    });
   }
 
-  void _createConnectionMarkers(Iterable<dynamic> contacts) {
+  Future<Uint8List> getImages(String path, int width) async {
+    ByteData data = await rootBundle.load(path);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
+        targetHeight: width);
+    ui.FrameInfo fi = await codec.getNextFrame();
+    return (await fi.image.toByteData(format: ui.ImageByteFormat.png))!
+        .buffer
+        .asUint8List();
+  }
+
+  void _createConnectionMarkers(Iterable<dynamic> contacts) async {
     Set<Marker> newMarkers = {};
 
-    for (final contact in contacts) {
+    LatLng userPos = LatLng(widget.userPosition[0], widget.userPosition[1]);
+
+    final Uint8List userShip = await getImages('assets/icons/ship-2.png', 100);
+    final Uint8List contactShip =
+        await getImages('assets/icons/ship-1.png', 100);
+
+    newMarkers.add(Marker(
+        markerId: MarkerId('primary-user'),
+        position: userPos,
+        icon: BitmapDescriptor.fromBytes(userShip)));
+    for (ConnectionModel contact in contacts) {
+      LatLng contactPos = LatLng(
+          double.tryParse(contact.lat!)!, double.tryParse(contact.long!)!);
       newMarkers.add(Marker(
-          markerId: MarkerId('connection-$contact.id'),
-          position: contact.location,
+          markerId: MarkerId('connection-${contact.id}'),
+          position: contactPos,
+          icon: BitmapDescriptor.fromBytes(contactShip),
           onTap: () {
             _onTappedMarker(contact);
           }));
+      print(contactPos);
     }
     setState(() {
       _markers.addAll(newMarkers);
@@ -87,8 +114,6 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  void createMapCenter(Iterable<dynamic> connections) {}
-
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
@@ -98,17 +123,18 @@ class _MapViewState extends State<MapView> {
             (ccModel) => ccModel.hiveConnections);
 
     CameraPosition startingCenter = CameraPosition(
-      target: LatLng(37.42796133580664, -122.085749655962),
-      zoom: 7.0,
+      target: LatLng(widget.userPosition[0], widget.userPosition[1]),
+      zoom: 6.0,
     );
     return Scaffold(
       body: SlidingUpPanel(
+          controller: _pc,
           panelBuilder: (ScrollController sc) => _panel(sc),
           borderRadius: radius,
           minHeight: _panelHeightClosed,
           body: GoogleMap(
             mapType: MapType.normal,
-            initialCameraPosition: _kGooglePlex,
+            initialCameraPosition: startingCenter,
             onMapCreated: (GoogleMapController controller) {
               _createConnectionMarkers(hiveConnections);
               _controller.complete(controller);
@@ -161,7 +187,9 @@ class _MapViewState extends State<MapView> {
                               ),
                             ),
                             Text(
-                              selectedContact!.city,
+                              (selectedContact!.city == null
+                                  ? 'No Name found'
+                                  : selectedContact!.city!),
                               style: TextStyle(
                                 fontWeight: FontWeight.normal,
                                 fontSize: 15.0,

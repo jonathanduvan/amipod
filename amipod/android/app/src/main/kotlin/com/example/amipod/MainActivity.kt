@@ -1,4 +1,4 @@
-package com.example.amipod
+package com.example.dipity
 
 import io.flutter.embedding.android.FlutterActivity
 

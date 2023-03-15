@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/ValidationCodeInput/components/components/body.dart';
+import 'package:dipity/Screens/ValidationCodeInput/components/components/body.dart';
 import 'package:flutter/material.dart';
 
 class ValidationCodeInput extends StatelessWidget {

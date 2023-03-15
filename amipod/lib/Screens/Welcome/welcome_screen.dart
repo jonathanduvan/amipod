@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/Welcome/components/body.dart';
+import 'package:dipity/Screens/Welcome/components/body.dart';
 import 'package:flutter/material.dart';
 
 class WelcomeScreen extends StatelessWidget {

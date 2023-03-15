@@ -1,4 +1,4 @@
-# amipod
+# dipity
 
 A new Flutter project.
 

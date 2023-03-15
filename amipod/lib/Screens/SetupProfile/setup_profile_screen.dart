@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/SetupProfile/components/body.dart';
+import 'package:dipity/Screens/SetupProfile/components/body.dart';
 import 'package:flutter/material.dart';
 
 class SetupProfileScreen extends StatelessWidget {

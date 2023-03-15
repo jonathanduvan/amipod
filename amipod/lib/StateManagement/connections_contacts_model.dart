@@ -1,13 +1,14 @@
 import 'dart:convert';
 
-import 'package:amipod/HiveModels/contact_model.dart';
-import 'package:amipod/HiveModels/pod_model.dart';
-import 'package:amipod/Services/database_api.dart';
-import 'package:amipod/Services/encryption.dart';
-import 'package:amipod/Services/hive_api.dart';
-import 'package:amipod/Services/secure_storage.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Services/database_api.dart';
+import 'package:dipity/Services/encryption.dart';
+import 'package:dipity/Services/hive_api.dart';
+import 'package:dipity/Services/secure_storage.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -149,15 +150,81 @@ class ConnectionsContactsModel extends ChangeNotifier {
     }
   }
 
+  List<ConnectedContact> createConnectedContacts(
+      List<QueryDocumentSnapshot<Object?>> conns) {
+    List<ConnectedContact> connected = [];
+
+    for (var conn in conns) {
+      Map<String, dynamic> encryptedData = conn.data() as Map<String, dynamic>;
+      if (encryptedData != null) {
+        String encryptedName = conn.id;
+
+        try {
+          String phone = encrypter.decryptData(encryptedName);
+
+          //TODO: Remove hard coded us code
+
+          if (phone != allValues[idKeyName]) {
+            if (phone.contains('dipity_userid:')) {
+              phone = phone.replaceAll('dipity_userid:', '');
+              phone = '+1$phone';
+            }
+            String encryptPhone = encrypter.encryptData(phone);
+            ContactModel contact = contactsBox.get(encryptPhone);
+
+            String name = contact.name;
+            print(name);
+            String initials = contact.initials;
+
+            String encryptedLoc = encryptedData['location'];
+            List encryptedPos = encryptedData['position'];
+
+            String encryptedLat = encryptedPos[0];
+            String encryptedLong = encryptedPos[1];
+
+            String location = encrypter.decryptData(encryptedLoc);
+            var lat =
+                encrypter.decryptData(encryptedLat).replaceAll('lat:', '');
+            var long =
+                encrypter.decryptData(encryptedLong).replaceAll('long:', '');
+            ;
+
+            LatLng latLng =
+                LatLng(double.tryParse(lat)!, double.tryParse(long)!);
+
+            print(phone);
+            print(location);
+            print(lat);
+            print(long);
+
+            ConnectedContact connection = ConnectedContact(
+                name: name,
+                initials: initials,
+                phone: phone,
+                city: location,
+                location: latLng,
+                street: 'not available');
+
+            connected.add(connection);
+          }
+        } catch (error) {
+          print(error);
+        }
+      }
+      // ConnectedContact(city: )
+    }
+    return connected;
+  }
+
   void updateWithNewConnections(
       Set<List<QueryDocumentSnapshot<Object?>>> newConns) {
-    List connsToAdd = [];
+    print('getting new connections');
     List<QueryDocumentSnapshot<Object?>> conns = newConns.first;
-    print(newConns);
-    conns.forEach((conn) {
-      print(conn.id);
-      print(conn.data());
-    });
+
+    if (conns.length > 0) {
+      List<ConnectedContact> connected = createConnectedContacts(conns);
+      hiveApi.addConnections(encrypter, connectionsBox, connected);
+    }
   }
 
   void updateConnections() {

@@ -11,12 +11,12 @@ const dipityBlack = Color(0xFF22242F);
 // Shared Preferences Keys
 const firstNameKey = 'first_name';
 const lastNameKey = 'last_name';
-const LoggedInKey = 'logged_in';
+const loggedInKey = 'logged_in';
 
 // Secure Storage Keys
 const idKeyName = 'id';
 const encryptionKeyName = 'encryption_key';
-const IVKeyName = 'iv_key';
+const iVKeyName = 'iv_key';
 const userPinKeyName = 'user_pin';
 const userPasswordKeyName = 'user_password';
 const userPhoneNumberKeyName = 'user_phone_number';

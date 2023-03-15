@@ -5,17 +5,9 @@ class DatabaseAPI {
 
   Future<Set<List<QueryDocumentSnapshot<Object?>>>> getConnectionsInfo(
       List ids) {
-    // List<QueryDocumentSnapshot<Object?>> data = [];
-    // return db
-    //     .collection('users')
-    //     .where('uid', whereIn: ids)
-    //     .get()
-    //     .then((QuerySnapshot value) => {value.docs}, onError: (e) => e);
-
-    return db
-        .collection('users')
-        .get()
-        .then((QuerySnapshot value) => {value.docs}, onError: (e) => e);
+    return db.collection('users').get().then(
+        (QuerySnapshot value) => {value.docs},
+        onError: (e) => {print(e)});
   }
 
   void setUser(String id, Map<String, dynamic> value) {

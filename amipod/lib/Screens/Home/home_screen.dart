@@ -1,22 +1,22 @@
 import 'dart:convert' show base64Decode, base64Url, base64UrlEncode;
-import 'package:amipod/HiveModels/contact_model.dart';
-import 'package:amipod/HiveModels/pod_model.dart';
-import 'package:amipod/Screens/Home/components/connections_view.dart';
-import 'package:amipod/Screens/Home/components/events_view.dart';
-import 'package:amipod/Screens/Home/components/home_view.dart';
-import 'package:amipod/Screens/Home/components/reminders_view.dart';
-import 'package:amipod/Screens/Home/components/map.dart';
-import 'package:amipod/Screens/Login/login_screen.dart';
-import 'package:amipod/Services/encryption.dart';
-import 'package:amipod/Services/hive_api.dart';
-import 'package:amipod/Services/secure_storage.dart';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Screens/Home/components/connections_view.dart';
+import 'package:dipity/Screens/Home/components/events_view.dart';
+import 'package:dipity/Screens/Home/components/home_view.dart';
+import 'package:dipity/Screens/Home/components/reminders_view.dart';
+import 'package:dipity/Screens/Home/components/map.dart';
+import 'package:dipity/Screens/Login/login_screen.dart';
+import 'package:dipity/Services/encryption.dart';
+import 'package:dipity/Services/hive_api.dart';
+import 'package:dipity/Services/secure_storage.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
 import 'package:contacts_service/contacts_service.dart';
-import 'package:amipod/Services/user_management.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/Services/user_management.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
 // import 'package:geocode/geocode.dart';
-import 'package:amipod/Screens/Home/components/add_button.dart';
+import 'package:dipity/Screens/Home/components/add_button.dart';
 import 'package:geocode/geocode.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
@@ -78,7 +78,7 @@ class _HomeState extends State<Home> {
     topRight: Radius.circular(24.0),
   );
 
-  PanelController _pc = new PanelController();
+  final PanelController _pc = PanelController();
 
   SecureStorage storage = SecureStorage();
   EncryptionManager encrypter = EncryptionManager();
@@ -127,7 +127,7 @@ class _HomeState extends State<Home> {
 
   void updateUserLocation() async {
     Position currPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.lowest);
     bool servicestatus = await Geolocator.isLocationServiceEnabled();
     // Position currPosition = Position(longitude: longitude, latitude: latitude, timestamp: timestamp, accuracy: accuracy, altitude: altitude, heading: heading, speed: speed, speedAccuracy: speedAccuracy)
     if (servicestatus) {
@@ -137,10 +137,12 @@ class _HomeState extends State<Home> {
     }
     print('okay am i updatring location');
     print(currPosition);
-    userManagement.updateUserLocation(currPosition).then((userLocation) {
+    userManagement.updateUserLocation(currPosition).then((currLocation) {
+      print('updated user location');
+      print(currLocation['position']);
       setState(() {
-        userPosition = userLocation[0];
-        userLocation = userLocation[1];
+        userPosition = currLocation['position'];
+        userLocation = currLocation['location'];
       });
     });
   }
@@ -200,37 +202,27 @@ class _HomeState extends State<Home> {
 
     // Check for if connected goes here
 
-    // Dummy code for creating connectedContact list
-    int howMany = 0;
+    // var address = await _getAddress(latlong.latitude, latlong.longitude);
 
-    for (var i = 0; i < howMany; i++) {
-      var latlong = testUSLocations[i];
+    // var addressParts = address.toString().split(";");
 
-      var address = await _getAddress(latlong.latitude, latlong.longitude);
-
-      var addressParts = address.toString().split(";");
-
-      var conCon = ConnectedContact(
-          name: contacts[i].displayName!,
-          initials: contacts[i].initials(),
-          avatar: contacts[i].avatar,
-          phone: contacts[i].phones![0].value!,
-          location: testUSLocations[i],
-          street: addressParts[0],
-          city: addressParts[1]);
-
-      contacts.removeAt(i);
-      connected.add(conCon);
-    }
     for (var i = 0; i < contacts.length; i++) {
-      var unconCon = UnconnectedContact(
-        name: contacts[i].displayName!,
-        initials: contacts[i].initials(),
-        avatar: contacts[i].avatar,
-        phone: contacts[i].phones![0].value!,
-      );
+      var currContacts = contacts[i];
+      if ((currContacts.displayName != null) &&
+          (currContacts.phones!.isNotEmpty)) {
+        String name = currContacts.displayName!;
+        if (name.contains('Andrew Crutchfield')) {
+          print(currContacts.phones![0].value!);
+        }
+        var unconCon = UnconnectedContact(
+          name: currContacts.displayName!,
+          initials: currContacts.initials(),
+          avatar: currContacts.avatar,
+          phone: currContacts.phones![0].value!,
+        );
 
-      unconnected.add(unconCon);
+        unconnected.add(unconCon);
+      }
     }
 
     var allContacts =
@@ -246,7 +238,8 @@ class _HomeState extends State<Home> {
     var mapContacts = await _updateConnectedContacts(contacts);
     Provider.of<ConnectionsContactsModel>(context, listen: false)
         .updateContacts(mapContacts.unconnected!);
-
+    Provider.of<ConnectionsContactsModel>(context, listen: false)
+        .updateConnections();
     Provider.of<ConnectionsContactsModel>(context, listen: false).contacts;
     Provider.of<ConnectionsContactsModel>(context, listen: false).connections;
     Provider.of<ConnectionsContactsModel>(context, listen: false).pods;
@@ -266,9 +259,9 @@ class _HomeState extends State<Home> {
     // Save an String value to 'firstName' and 'lastName keys.
 
     if (login) {
-      await prefs.setBool(LoggedInKey, true);
+      await prefs.setBool(loggedInKey, true);
     } else {
-      await prefs.setBool(LoggedInKey, false);
+      await prefs.setBool(loggedInKey, false);
     }
     return login;
   }
@@ -317,7 +310,7 @@ class _HomeState extends State<Home> {
                 color: backgroundColor,
               ),
               child: Text(
-                'Drawer Header',
+                'Menu',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -425,7 +418,9 @@ class _HomeState extends State<Home> {
         maxHeight: _panelHeightOpen,
         minHeight: _panelHeightClosed,
         body: displayMap
-            ? MapView()
+            ? MapView(
+                userPosition: userPosition,
+              )
             : IndexedStack(
                 index: _selectedIndex,
                 children: [

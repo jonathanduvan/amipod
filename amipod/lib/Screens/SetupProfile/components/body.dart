@@ -1,7 +1,7 @@
-import 'package:amipod/Screens/CreatePin/components/create_pin_screen.dart';
-import 'package:amipod/Screens/SetupProfile/components/background.dart';
+import 'package:dipity/Screens/CreatePin/components/create_pin_screen.dart';
+import 'package:dipity/Screens/SetupProfile/components/background.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

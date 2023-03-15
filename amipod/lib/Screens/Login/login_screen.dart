@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/Login/components/body.dart';
+import 'package:dipity/Screens/Login/components/body.dart';
 import 'package:flutter/material.dart';
 
 class Login extends StatelessWidget {

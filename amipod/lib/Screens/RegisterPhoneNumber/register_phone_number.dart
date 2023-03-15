@@ -1,4 +1,4 @@
-import 'package:amipod/Screens/RegisterPhoneNumber/components/body.dart';
+import 'package:dipity/Screens/RegisterPhoneNumber/components/body.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPhoneNumber extends StatelessWidget {

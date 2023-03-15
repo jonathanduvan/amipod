@@ -1,10 +1,10 @@
-import 'package:amipod/Screens/ValidationCodeInput/components/validation_code_input_screen.dart';
+import 'package:dipity/Screens/ValidationCodeInput/components/validation_code_input_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/RegisterPhoneNumber/components/background.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/Screens/RegisterPhoneNumber/components/background.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
-import 'package:amipod/Services/secure_storage.dart';
+import 'package:dipity/Services/secure_storage.dart';
 
 class Body extends StatefulWidget {
   Body({Key? key}) : super(key: key);
@@ -33,7 +33,7 @@ class _BodyState extends State<Body> {
   void _onSubmitPhoneNumber(BuildContext context) async {
     var uuid = Uuid();
     var currEncryptKey = await storage.readSecureData(encryptionKeyName);
-    var currIVKey = await storage.readSecureData(IVKeyName);
+    var currIVKey = await storage.readSecureData(iVKeyName);
     var countryCode = countryCodes[_dropdownValue];
     var fullNumber = '+$countryCode$phoneNumber';
 

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/Home/components/background.dart';
+import 'package:dipity/Screens/Home/components/background.dart';
 import 'package:contacts_service/contacts_service.dart';
 
 class HomeView extends StatefulWidget {

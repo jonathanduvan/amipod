@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:amipod/Screens/Login/login_screen.dart';
-import 'package:amipod/StateManagement/connections_contacts_model.dart';
+import 'package:dipity/Screens/Login/login_screen.dart';
+import 'package:dipity/StateManagement/connections_contacts_model.dart';
 import 'package:flutter/material.dart';
-import 'package:amipod/Screens/Welcome/welcome_screen.dart';
-import 'package:amipod/constants.dart';
+import 'package:dipity/Screens/Welcome/welcome_screen.dart';
+import 'package:dipity/constants.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -49,7 +49,8 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
-              image: AssetImage("assets/images/andy.png"), fit: BoxFit.cover),
+              image: AssetImage("assets/images/dipity-1024.png"),
+              fit: BoxFit.cover),
         ),
       ),
     );
@@ -68,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
     FlutterSecureStorage storage = FlutterSecureStorage();
     await storage.deleteAll();
 
-    var status = prefs.getBool(LoggedInKey) ?? false;
+    var status = prefs.getBool(loggedInKey) ?? false;
     print(status);
     if (status) {
       Navigator.pushReplacement(
@@ -94,7 +95,7 @@ class MyApp extends StatelessWidget {
               create: (context) => ConnectionsContactsModel()),
         ],
         child: MaterialApp(
-          title: 'Amipod',
+          title: 'Dipity',
           theme: ThemeData(
               primaryColor: primaryColor,
               scaffoldBackgroundColor: backgroundColor),
