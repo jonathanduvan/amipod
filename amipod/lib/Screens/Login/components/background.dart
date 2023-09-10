@@ -23,14 +23,11 @@ class Background extends StatelessWidget {
                     color: Colors.white,
                     fontSize: 40)),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 150.0),
-            child: SvgPicture.asset(
-              'assets/images/dipity.svg',
-              width: 180,
-              height: 180,
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.only(top: 150.0),
+          //   child: SvgPicture.asset('assets/images/dipity.svg',
+          //       width: 180, height: 180, fit: BoxFit.scaleDown),
+          // ),
           child,
         ]));
   }

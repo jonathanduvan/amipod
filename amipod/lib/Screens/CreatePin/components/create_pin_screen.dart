@@ -5,6 +5,6 @@ class CreatePin extends StatelessWidget {
   const CreatePin({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Body());
+    return const Scaffold(body: Body());
   }
 }

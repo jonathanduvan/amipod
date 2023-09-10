@@ -20,7 +20,7 @@ class Background extends StatelessWidget {
             padding: const EdgeInsets.only(top: 70.0, left: 10.0),
             child: Text("Enter your phone number",
                 style: TextStyle(
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w200,
                     color: Colors.white,
                     fontSize: 40)),
           ),

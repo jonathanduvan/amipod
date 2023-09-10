@@ -10,7 +10,8 @@ class ContactModel extends HiveObject {
       {required this.id,
       required this.name,
       required this.initials,
-      required this.phone});
+      required this.phone,
+      this.blocked});
   @HiveField(0)
   String id;
 
@@ -25,4 +26,7 @@ class ContactModel extends HiveObject {
 
   @HiveField(4)
   String phone;
+
+  @HiveField(5, defaultValue: false)
+  bool? blocked;
 }

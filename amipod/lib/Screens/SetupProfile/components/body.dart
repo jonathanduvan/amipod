@@ -41,12 +41,11 @@ class _BodyState extends State<Body> {
           Text("Your profile will be visible only to any connections you make.",
               style:
                   TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-
           Form(
             key: _profileFormKey,
             child: Column(
               children: <Widget>[
-                SizedBox(height: 100),
+                SizedBox(height: 50),
                 TextFormField(
                   style: TextStyle(color: primaryColor, fontSize: 20),
                   cursorColor: Colors.white,
@@ -107,7 +106,7 @@ class _BodyState extends State<Body> {
                         lastName = value;
                       });
                     }),
-                SizedBox(height: 300),
+                SizedBox(height: 30),
                 SizedBox(
                   width: size.width - 100,
                   height: 50,
@@ -139,18 +138,6 @@ class _BodyState extends State<Body> {
               ],
             ),
           ),
-
-          // TextButton(
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (context) => const CreatePin()),
-          //     );
-          //     ;
-          //   },
-          //   child: Text('Create Profile'),
-          //   // TODO: Add style to button
-          // ),
         ]));
   }
 }

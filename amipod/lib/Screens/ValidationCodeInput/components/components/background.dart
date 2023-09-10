@@ -14,9 +14,14 @@ class Background extends StatelessWidget {
         height: size.height,
         width: size.width,
         child: Stack(alignment: Alignment.topCenter, children: <Widget>[
-          Positioned(
-              child: Text(
-                  'Enter the code we sent to: *this is a placeholder for a phone nbr')),
+          Padding(
+            padding: const EdgeInsets.only(top: 70.0, left: 0.0),
+            child: Text("Verify Your Number",
+                style: TextStyle(
+                    fontWeight: FontWeight.w200,
+                    color: Colors.white,
+                    fontSize: 40)),
+          ),
           child,
         ]));
   }

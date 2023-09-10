@@ -13,7 +13,9 @@ class ConnectionModel extends HiveObject {
       required this.phone,
       required this.lat,
       required this.long,
-      this.city});
+      this.city,
+      this.blocked,
+      this.last_update});
   @HiveField(0)
   String id;
 
@@ -40,4 +42,10 @@ class ConnectionModel extends HiveObject {
 
   @HiveField(8, defaultValue: 'Not Available')
   String? street;
+
+  @HiveField(9, defaultValue: false)
+  bool? blocked;
+
+  @HiveField(10, defaultValue: 'Not Available')
+  String? last_update;
 }

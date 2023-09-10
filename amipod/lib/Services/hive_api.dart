@@ -12,6 +12,7 @@ class HiveAPI {
   String contactsBoxName = 'contactsBox';
   String connectionsBoxName = 'connectionsBox';
   String podsBoxName = 'podsBox';
+  String checkInBoxName = 'checkInBox';
 
   bool areBoxesOpen(List<Box> boxes) {
     bool open = true;
@@ -23,6 +24,27 @@ class HiveAPI {
     return open;
   }
 
+  Future<Box> getContactsBox(List<int> key) async {
+    // return Hive.box<ContactModel>(contactsBoxName);
+    final encryptedBox = await Hive.openBox<ContactModel>(contactsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
+  }
+
+  Future<Box> getConnectionsBox(List<int> key) async {
+    // return Hive.box<ContactModel>(contactsBoxName);
+    final encryptedBox = await Hive.openBox<ConnectionModel>(connectionsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
+  }
+
+  Future<Box> getPodsBox(List<int> key) async {
+    // return Hive.box<ContactModel>(contactsBoxName);
+    final encryptedBox = await Hive.openBox<PodModel>(podsBoxName,
+        encryptionCipher: HiveAesCipher(key));
+    return encryptedBox;
+  }
+
   List<int> decodeHiveBoxKey(String key) {
     final encryptionKey = base64Url.decode(key);
     return encryptionKey;
@@ -31,7 +53,6 @@ class HiveAPI {
   // Functions Relating to Contacts
   Future<Box> createContactsBox(List<int> key) async {
     // Initialize TypeAdapters
-    Hive.registerAdapter(ContactModelAdapter());
     final encryptedBox = await Hive.openBox<ContactModel>(contactsBoxName,
         encryptionCipher: HiveAesCipher(key));
     return encryptedBox;
@@ -96,11 +117,46 @@ class HiveAPI {
     return noBox;
   }
 
+  getContact(Box contactsBox, String id) {
+    return contactsBox.get(id);
+  }
+
+  //
+
+  block(Box box, String id) {
+    var userModel = box.get(id);
+
+    if (userModel is ConnectionModel) {
+      ConnectionModel user = userModel;
+      user.blocked = true;
+      print(user.blocked);
+      print(id);
+      print(user.name);
+      user.save();
+      print(user.blocked);
+    } else {
+      ContactModel user = userModel;
+
+      user.blocked = true;
+      print(user.blocked);
+      user.save();
+    }
+    print("we going to block the following user: $id");
+  }
+
+  unblock(Box box, String id) {
+    var userModel = box.get(id);
+
+    userModel.blocked = false;
+
+    userModel.save();
+  }
+  //
+
   // Functions Relating to Connections
 
   Future<Box> createConnectionsBox(List<int> key) async {
     // Initialize TypeAdapters
-    Hive.registerAdapter(ConnectionModelAdapter());
     final encryptedBox = await Hive.openBox<ConnectionModel>(connectionsBoxName,
         encryptionCipher: HiveAesCipher(key));
     return encryptedBox;
@@ -108,6 +164,7 @@ class HiveAPI {
 
   Future<Box> openConnectionsBox(List<int> key) async {
     // Initialize TypeAdapters
+
     final encryptedBox = await Hive.openBox<ConnectionModel>(connectionsBoxName,
         encryptionCipher: HiveAesCipher(key));
     return encryptedBox;
@@ -122,28 +179,37 @@ class HiveAPI {
   }
 
   void addConnections(EncryptionManager encrypter, Box connectionsBox,
-      List<ConnectedContact> connContacts) {
-    connContacts.forEach((element) {
+      List<ConnectedContact> connContacts) async {
+    for (var element in connContacts) {
       String id = encrypter.encryptData(element.phone);
-      var connection = ConnectionModel(
-          id: id,
-          name: element.name,
-          initials: element.initials,
-          phone: element.phone,
-          lat: element.location!.latitude.toString(),
-          long: element.location!.longitude.toString(),
-          city: element.city);
-      if (element.avatar != null && element.avatar?.isEmpty == true) {
-        connection.avatar = element.avatar;
+
+      if (!element.uncharted) {
+        var connection = ConnectionModel(
+            id: id,
+            name: element.name,
+            initials: element.initials,
+            phone: element.phone,
+            lat: element.location!.latitude.toString(),
+            long: element.location!.longitude.toString(),
+            city: element.city,
+            blocked: element.blocked,
+            last_update: element.last_update);
+        if (element.avatar != null && element.avatar?.isEmpty == true) {
+          connection.avatar = element.avatar;
+        }
+
+        connectionsBox.put(id, connection);
       }
-      connectionsBox.put(id, connection);
-    });
+    }
+  }
+
+  getConnection(Box connectionsBox, String id) {
+    return connectionsBox.get(id);
   }
 
   // Functions Relating to Pods
 
   Future<Box> createPodsBox(List<int> key) async {
-    Hive.registerAdapter(PodModelAdapter());
     final encryptedBox = await Hive.openBox<PodModel>(podsBoxName,
         encryptionCipher: HiveAesCipher(key));
     return encryptedBox;
@@ -174,6 +240,7 @@ class HiveAPI {
       Box podsBox,
       Box contactsBox,
       Box connectionsBox,
+      Map<String, ConnectionModel> podConnections,
       Map<String, ContactModel> podContacts,
       String title) {
     var uuid = const Uuid();
@@ -194,11 +261,39 @@ class HiveAPI {
       newPod.contacts = HiveList(contactsBox); // Create a HiveList
       newPod.contacts!.addAll(podContacts.values);
 
+      newPod.connections = HiveList(connectionsBox); // Create a HiveList
+      newPod.connections!.addAll(podConnections.values);
+
       newPod.save();
+
       return newPod;
     }
 
     return inPods;
+  }
+
+  bool updatePod(
+      Box podsBox,
+      String id,
+      Map<String, ConnectionModel> connections,
+      Map<String, ContactModel> contacts,
+      String title) {
+    PodModel inPods = podsBox.get(id);
+
+    inPods.contacts?.clear();
+    inPods.contacts?.addAll(contacts.values);
+
+    inPods.connections?.clear();
+    inPods.connections?.addAll(connections.values);
+
+    inPods.name = title;
+
+    inPods.save();
+    return true;
+  }
+
+  getPod(Box podsBox, String id) {
+    return podsBox.get(id);
   }
 
   addPod(Box podsBox, PodModel pod) {
@@ -207,5 +302,25 @@ class HiveAPI {
 
   Future<void> deletePod(PodModel pod) async {
     return pod.delete();
+  }
+
+  // Check if name of pod being created or updated already has a pod with the same name
+  bool checkPodTitle(Box box, String name, String? id) {
+    Iterable<dynamic> pods = box.values;
+
+    for (PodModel pod in pods) {
+      print(pod.name);
+      print(name);
+      print('OH WE COMPARING');
+
+      if ((pod.name == name) && ((id != null) && (id != pod.id))) {
+        return false;
+      } else if (pod.name == name) {
+        print('we returned false');
+        return false;
+      }
+    }
+    print('we didn NOTTTT erturn fale');
+    return true;
   }
 }

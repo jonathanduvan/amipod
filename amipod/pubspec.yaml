@@ -61,9 +61,21 @@ dependencies:
   cloud_firestore: ^4.4.3
   geolocator: ^9.0.2
   geocoding: ^2.0.4
+  mask_text_input_formatter: ^2.4.0
+  envied: ^0.3.0
+  flutter_map: ^3.1.0
+  url_launcher: ^6.1.11
+  firebase_auth: ^4.2.2
+  introduction_screen: ^3.1.8
+  firebase_messaging: ^14.6.0
+  overlay_support: ^2.1.0
+  workmanager: ^0.5.1
+  flutter_native_splash: ^2.2.19
+  flutter_local_notifications: ^14.1.0
+  syncfusion_flutter_datepicker: ^22.1.38
+  intl: ^0.18.1
 
-
-
+  
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -77,8 +89,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^2.0.1
   hive_generator: ^2.0.0
-  build_runner: any
+  build_runner: ^2.3.3
   flutter_launcher_icons: "^0.12.0"
+  envied_generator: ^0.3.0
 
 flutter_icons:
   android: "launcher_icon"
@@ -98,7 +111,10 @@ flutter_icons:
     generate: true
     image_path: "assets/images/dipity-1024.png"
 
-
+flutter_native_splash:
+    color: "#161F20"
+    image: "assets/images/dipity-1024.png"
+    ios: true
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -114,7 +130,9 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/map_style.json
     - .env
+  
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

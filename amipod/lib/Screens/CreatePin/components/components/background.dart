@@ -10,12 +10,12 @@ class Background extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    return Container(
+    return SizedBox(
         height: size.height,
         width: size.width,
         child: Stack(alignment: Alignment.topCenter, children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.only(top: 70.0, left: 0.0),
+          const Padding(
+            padding: EdgeInsets.only(top: 70.0, left: 0.0),
             child: Text("Create Your PIN",
                 style: TextStyle(
                     fontWeight: FontWeight.w200,

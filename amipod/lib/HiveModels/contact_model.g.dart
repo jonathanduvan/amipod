@@ -21,13 +21,14 @@ class ContactModelAdapter extends TypeAdapter<ContactModel> {
       name: fields[1] as String,
       initials: fields[2] as String,
       phone: fields[4] as String,
+      blocked: fields[5] == null ? false : fields[5] as bool?,
     )..avatar = fields[3] as Uint8List?;
   }
 
   @override
   void write(BinaryWriter writer, ContactModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -37,7 +38,9 @@ class ContactModelAdapter extends TypeAdapter<ContactModel> {
       ..writeByte(3)
       ..write(obj.avatar)
       ..writeByte(4)
-      ..write(obj.phone);
+      ..write(obj.phone)
+      ..writeByte(5)
+      ..write(obj.blocked);
   }
 
   @override

@@ -9,12 +9,9 @@ import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:dipity/Screens/Home/components/background.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:geocode/geocode.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:contacts_service/contacts_service.dart';
-import 'package:dipity/Screens/Home/components/add_button.dart';
+import 'package:dipity/Screens/Home/components/popup.dart';
 
 import 'package:provider/provider.dart';
 
@@ -24,26 +21,17 @@ const List<Widget> lists = <Widget>[
 ];
 
 class ConnectionsView extends StatefulWidget {
-  final int currentIndex;
-
-  // final Box contactsBox;
-  // final Box connectionsBox;
-  // final Box podsBox;
-
-  // final Iterable<dynamic>? hiveContacts;
-  // final Iterable<dynamic>? hiveConnections;
-  // final Iterable<dynamic>? hivePods;
-
+  final Function blockContact;
+  final Function blockConnection;
+  final Function inviteContact;
   final String searchText;
+  final Function onSelect;
   const ConnectionsView(
       {Key? key,
-      required this.currentIndex,
-      // required this.contactsBox,
-      // required this.connectionsBox,
-      // required this.podsBox,
-      // this.hiveContacts,
-      // this.hiveConnections,
-      // this.hivePods,
+      required this.blockContact,
+      required this.blockConnection,
+      required this.inviteContact,
+      required this.onSelect,
       required this.searchText})
       : super(key: key);
   @override
@@ -52,9 +40,9 @@ class ConnectionsView extends StatefulWidget {
 
 class _ConnectionsViewState extends State<ConnectionsView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
-  List<ContactModel> contacts = [];
-  List<ConnectionModel> connections = [];
-  List<PodModel> pods = [];
+  List<dynamic> displayContacts = [];
+  Iterable<dynamic> displayConnections = [];
+  Iterable<dynamic> displayPods = [];
 
   final List<bool> _selectedLists = <bool>[true, false];
 
@@ -62,14 +50,22 @@ class _ConnectionsViewState extends State<ConnectionsView> {
 
   int _start = 10;
   String page = 'Connections';
-  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<ConnectionsContactsModel>(context, listen: false)
+        .updateConnections();
+
+    _startTimer();
+  }
 
   bool checkTimer() {
-    return _start == 0;
+    return mounted;
   }
 
   void _startTimer() {
-    Timer(const Duration(seconds: 7), () {
+    Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
           _start = 0;
@@ -78,74 +74,150 @@ class _ConnectionsViewState extends State<ConnectionsView> {
     });
   }
 
-  List<dynamic> searchPodList(Iterable<dynamic> infoList) {
-    List<dynamic> searchedPods = [];
+  searchPodList(Iterable<dynamic> infoList) {
+    List<PodModel> searchedPods = [];
     List<PodModel> pods = [];
     for (PodModel pod in infoList) {
       String data = pod.name;
 
       if (data.toLowerCase().contains(widget.searchText.toLowerCase())) {
         searchedPods.add(pod);
+      } else {
+        bool inPod = false;
+        if (pod.connections != null) {
+          List podConns = pod.connections!.toList();
+          for (ConnectionModel connection in podConns) {
+            if (connection.name
+                .toLowerCase()
+                .contains(widget.searchText.toLowerCase())) {
+              searchedPods.add(pod);
+              inPod = true;
+              break;
+            }
+            ;
+          }
+        }
+        if ((pod.contacts != null) && (inPod == false)) {
+          List podConns = pod.contacts!.toList();
+          for (ContactModel contact in podConns) {
+            if (contact.name
+                .toLowerCase()
+                .contains(widget.searchText.toLowerCase())) {
+              searchedPods.add(pod);
+              inPod = true;
+              break;
+            }
+            ;
+          }
+        }
       }
     }
-    return searchedPods;
+
+    setState(() {
+      displayPods = searchedPods;
+    });
+  }
+
+  searchContactList(Iterable<dynamic> infoList) {
+    List<ContactModel> searchedContacts = [];
+    for (ContactModel contact in infoList) {
+      String data = contact.name;
+      if (data.toLowerCase().contains(widget.searchText.toLowerCase())) {
+        searchedContacts.add(contact);
+      }
+    }
+
+    setState(() {
+      displayContacts = searchedContacts;
+    });
+  }
+
+  searchConnectionList(Iterable<dynamic> infoList) {
+    List<ConnectionModel> searchedConnections = [];
+    for (ConnectionModel contact in infoList) {
+      String data = contact.name;
+
+      if (data.toLowerCase().contains(widget.searchText.toLowerCase())) {
+        searchedConnections.add(contact);
+      }
+    }
+
+    setState(() {
+      displayConnections = searchedConnections;
+    });
   }
 
   List<Widget> createPodList(Iterable<dynamic> hivePods) {
     List<Widget> listings = [];
 
-    hivePods.forEach((element) {
-      print(element);
-      listings
-          .add(IceCreamCard(flavorColor: primaryColor, flavor: element.name));
-    });
+    for (PodModel element in hivePods) {
+      listings.add(PodCard(
+          flavorColor: primaryColor,
+          flavor: element.name,
+          pod: element,
+          onSelect: widget.onSelect));
+    }
 
     return listings;
   }
 
-  bool checkList(Iterable<dynamic> infoList) {
+  bool checkList(Iterable<dynamic> infoList, String type) {
+    bool passCheck = true;
     if (infoList.isNotEmpty) {
       if (widget.searchText != '') {
-        var firstEle = infoList.first;
-
-        if (firstEle is ContactModel) {
+        if (type == 'pod') {
           searchPodList(infoList);
-        } else if (firstEle is ConnectionModel) {
-          // searchConnectionList(infoList);
-        } else {
-          // searchContactList(infoList);
+        } else if (type == 'contact') {
+          searchContactList(infoList);
+        } else if (type == 'connection') {
+          searchConnectionList(infoList);
+        }
+      } else {
+        if (type == 'pod') {
+          setState(() {
+            displayPods = infoList;
+          });
+        } else if (type == 'contact') {
+          setState(() {
+            displayContacts = infoList.toList();
+          });
+        } else if (type == 'connection') {
+          setState(() {
+            displayConnections = infoList;
+          });
         }
       }
-
-      return true;
     } else {
-      return false;
+      if (type == 'connection') {
+        print(infoList.toList());
+      }
+      passCheck = false;
     }
+
+    return passCheck;
   }
 
-  @override
-  void initState() {
-    super.initState();
+  confirmBlockContact(ContactModel c) async {
     Provider.of<ConnectionsContactsModel>(context, listen: false)
-        .updateConnections();
-    _startTimer();
+        .blockContact(c.id);
+    Navigator.of(context).pop();
+    Provider.of<ConnectionsContactsModel>(context, listen: false).contacts;
   }
 
   @override
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
-
-    Box? contactsBox = context.select<ConnectionsContactsModel, Box?>(
-        (ccModel) => ccModel.contactsBox);
-    Box? connectionsBox = context.select<ConnectionsContactsModel, Box?>(
+    Box connectionsBox = context.select<ConnectionsContactsModel, Box>(
         (ccModel) => ccModel.connectionsBox);
-    Box? podsBox = context
-        .select<ConnectionsContactsModel, Box?>((ccModel) => ccModel.podsBox);
-
-    Iterable<dynamic> hiveContacts =
-        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
+    Box contactsBox = context.select<ConnectionsContactsModel, Box>(
+        (ccModel) => ccModel.contactsBox);
+    Provider.of<ConnectionsContactsModel>(context, listen: true).connections;
+    Provider.of<ConnectionsContactsModel>(context, listen: true).contacts;
+    List<dynamic> hiveContacts =
+        context.select<ConnectionsContactsModel, List<dynamic>>(
             (ccModel) => ccModel.hiveContacts);
+
     Iterable<dynamic> hiveConnections =
         context.select<ConnectionsContactsModel, Iterable<dynamic>>(
             (ccModel) => ccModel.hiveConnections);
@@ -154,331 +226,322 @@ class _ConnectionsViewState extends State<ConnectionsView> {
             (ccModel) => ccModel.hivePods);
 
     return Background(
-        child: ListView(padding: const EdgeInsets.only(top: 10.0), children: <
-            Widget>[
-      SizedBox(
-        height: 36.0,
-      ),
-      Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              "Pods",
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 18.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-      Column(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
-        SafeArea(
-          child: checkList(hivePods)
-              ? Container(
-                  height: size.height * .15,
-                  width: size.width * .80,
-                  child: Center(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(children: createPodList(hivePods)),
-                    ),
-                  ))
-              : Container(
-                  width: size.width * .95,
-                  child: Center(
-                    child: Text(
-                      "No Pods to Display",
-                      style: TextStyle(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 12.0,
-                      ),
-                    ),
-                  )),
-        ),
-      ]),
-      SizedBox(
-        height: 36.0,
-      ),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          ToggleButtons(
-            direction: Axis.horizontal,
-            onPressed: (int index) {
-              setState(() {
-                // The button that is tapped is set to true, and the others to false.
-                for (int i = 0; i < _selectedLists.length; i++) {
-                  _selectedLists[i] = i == index;
-                }
-              });
-            },
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-            selectedBorderColor: primaryColor,
-            selectedColor: backgroundColor,
-            fillColor: primaryColor,
-            color: backgroundColor,
-            constraints: const BoxConstraints(
-              minHeight: 40.0,
-              minWidth: 100.0,
-            ),
-            isSelected: _selectedLists,
-            children: lists,
+        child: ListView(
+            padding: const EdgeInsets.only(top: 10.0),
+            children: <Widget>[
+          SizedBox(
+            height: 15.0,
           ),
-        ],
-      ),
-      Container(
-        color: Colors.white,
-        width: size.width * .95,
-        height: size.height * .40,
-        child: _selectedLists[0] == true
-            ? Column(mainAxisAlignment: MainAxisAlignment.center, children: <
-                Widget>[
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                Text('Pods',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 25)),
+              ],
+            ),
+          ),
+          Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
                 SafeArea(
-                  child: checkList(hiveConnections)
-                      ? SizedBox(
-                          height: size.height * .40,
-                          child: ListView.builder(
-                            scrollDirection: Axis.vertical,
-                            shrinkWrap: true,
-                            itemCount: hiveConnections.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              ConnectionModel c =
-                                  hiveConnections.elementAt(index);
-
-                              return Card(
-                                elevation: 6,
-                                color: backgroundColor,
-                                margin: EdgeInsets.all(10),
-                                child: ListTile(
-                                  onTap: () {},
-                                  leading: (c.avatar != null &&
-                                          c.avatar?.isEmpty == true)
-                                      ? CircleAvatar(
-                                          backgroundImage:
-                                              MemoryImage(c.avatar!))
-                                      : CircleAvatar(
-                                          child: Text(
-                                          c.initials,
-                                          style: TextStyle(color: Colors.white),
-                                        )),
-                                  title: Text(c.name,
-                                      style: TextStyle(color: Colors.white)),
-                                ),
-                              );
-                            },
-                          ))
-                      : Center(
-                          child: checkTimer()
-                              ? Text(
-                                  "No Connections to Display",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 12.0,
-                                  ),
-                                )
-                              : CircularProgressIndicator(),
-                        ),
-                ),
-              ])
-            : Column(mainAxisAlignment: MainAxisAlignment.center, children: <
-                Widget>[
-                SafeArea(
-                  child: checkList(hiveContacts)
+                  child: checkList(hivePods, 'pod')
                       ? Container(
-                          color: Colors.white,
-                          width: size.width * .95,
-                          height: size.height * .40,
-                          child: ListView.builder(
-                            scrollDirection: Axis.vertical,
-                            shrinkWrap: true,
-                            itemCount: hiveContacts.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              ContactModel c = hiveContacts.elementAt(index);
-                              return Card(
-                                elevation: 6,
-                                margin: EdgeInsets.all(10),
-                                color: backgroundColor,
-                                shape: RoundedRectangleBorder(
-                                  side: BorderSide(
-                                      color: Colors.white, width: .5),
-                                ),
-                                child: ListTile(
-                                  onTap: () {},
-                                  leading: (c.avatar != null &&
-                                          c.avatar?.isEmpty == true)
-                                      ? CircleAvatar(
-                                          backgroundImage:
-                                              MemoryImage(c.avatar!))
-                                      : CircleAvatar(
-                                          child: Text(
-                                            c.initials,
-                                            style:
-                                                TextStyle(color: Colors.black),
-                                          ),
-                                          backgroundColor: primaryColor,
-                                        ),
-                                  title: Text(c.name,
-                                      style: TextStyle(color: Colors.white)),
-                                ),
-                              );
-                            },
+                          height: size.height * .15,
+                          width: size.width * .80,
+                          child: Center(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(children: createPodList(displayPods)),
+                            ),
                           ))
-                      : Center(
-                          child: checkTimer()
-                              ? Text(
-                                  "No Contacts to Display",
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 12.0,
-                                  ),
-                                )
-                              : CircularProgressIndicator()),
+                      : Container(
+                          width: size.width * .95,
+                          child: Center(
+                            child: Text(
+                              "No Pods to Display",
+                              style: TextStyle(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 12.0,
+                              ),
+                            ),
+                          )),
                 ),
               ]),
-      ),
-    ]));
-  }
-}
-
-/// Permission widget containing information about the passed [Permission]
-class PermissionWidget extends StatefulWidget {
-  /// Constructs a [PermissionWidget] for the supplied [Permission]
-  const PermissionWidget(this._permission);
-
-  final Permission _permission;
-  @override
-  _PermissionState createState() => _PermissionState(_permission);
-}
-
-class _PermissionState extends State<PermissionWidget> {
-  _PermissionState(this._permission);
-
-  final Permission _permission;
-  PermissionStatus _permissionStatus = PermissionStatus.denied;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _listenForPermissionStatus();
-  }
-
-  void _listenForPermissionStatus() async {
-    final status = await _permission.status;
-    setState(() => _permissionStatus = status);
-  }
-
-  Color getPermissionColor() {
-    switch (_permissionStatus) {
-      case PermissionStatus.denied:
-        return Colors.red;
-      case PermissionStatus.granted:
-        return Colors.green;
-      case PermissionStatus.limited:
-        return Colors.orange;
-      case PermissionStatus.permanentlyDenied:
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        _permission.toString(),
-        style: Theme.of(context).textTheme.bodyText1,
-      ),
-      subtitle: Text(
-        _permissionStatus.toString(),
-        style: TextStyle(color: getPermissionColor()),
-      ),
-      trailing: (_permission is PermissionWithService)
-          ? IconButton(
-              icon: const Icon(
-                Icons.info,
-                color: Colors.white,
+          SizedBox(
+            height: 36.0,
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              ToggleButtons(
+                direction: Axis.horizontal,
+                onPressed: (int index) {
+                  setState(() {
+                    // The button that is tapped is set to true, and the others to false.
+                    for (int i = 0; i < _selectedLists.length; i++) {
+                      _selectedLists[i] = i == index;
+                    }
+                  });
+                },
+                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                selectedBorderColor: primaryColor,
+                selectedColor: backgroundColor,
+                fillColor: primaryColor,
+                color: backgroundColor,
+                constraints: const BoxConstraints(
+                  minHeight: 40.0,
+                  minWidth: 100.0,
+                ),
+                isSelected: _selectedLists,
+                children: lists,
               ),
-              onPressed: () {
-                checkServiceStatus(
-                    context, _permission as PermissionWithService);
-              })
-          : null,
-      onTap: () {
-        requestPermission(_permission);
-      },
-    );
-  }
+            ],
+          ),
+          Container(
+            color: Colors.white,
+            width: size.width * .95,
+            height: size.height * .50,
+            child: _selectedLists[0] == true
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                        SafeArea(
+                          child: checkList(hiveConnections, 'connection')
+                              ? SizedBox(
+                                  height: size.height * .45,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.vertical,
+                                    shrinkWrap: true,
+                                    itemCount: displayConnections.length,
+                                    itemBuilder:
+                                        (BuildContext itemContext, int index) {
+                                      ConnectionModel c =
+                                          displayConnections.elementAt(index);
 
-  void checkServiceStatus(
-      BuildContext context, PermissionWithService permission) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text((await permission.serviceStatus).toString()),
-    ));
-  }
+                                      return Card(
+                                        elevation: 6,
+                                        color: backgroundColor,
+                                        margin: EdgeInsets.all(10),
+                                        child: ListTile(
+                                          onTap: () {
+                                            widget.onSelect(c.id, 'connection');
+                                          },
+                                          leading: (c.avatar != null &&
+                                                  c.avatar?.isEmpty == true)
+                                              ? CircleAvatar(
+                                                  backgroundImage:
+                                                      MemoryImage(c.avatar!))
+                                              : CircleAvatar(
+                                                  backgroundColor: primaryColor,
+                                                  child: Text(
+                                                    c.initials,
+                                                    style: TextStyle(
+                                                        color: backgroundColor),
+                                                  )),
+                                          title: Text(c.name,
+                                              style: TextStyle(
+                                                  color: Colors.white)),
+                                          subtitle: Text(
+                                              c.city ?? 'Not Available',
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontStyle: FontStyle.italic,
+                                                  fontSize: 14)),
+                                        ),
+                                      );
+                                    },
+                                  ))
+                              : Center(
+                                  child: checkTimer()
+                                      ? Text(
+                                          "No Connections to Display",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.normal,
+                                            fontSize: 12.0,
+                                          ),
+                                        )
+                                      : CircularProgressIndicator(),
+                                ),
+                        ),
+                      ])
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                        SafeArea(
+                          child: checkList(hiveContacts, 'contact')
+                              ? Container(
+                                  color: Colors.white,
+                                  width: size.width * .95,
+                                  height: size.height * .45,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.vertical,
+                                    shrinkWrap: true,
+                                    itemCount: displayContacts.length,
+                                    itemBuilder:
+                                        (BuildContext itemContext, int index) {
+                                      ContactModel c =
+                                          displayContacts.elementAt(index);
+                                      List<PopupMenuEntry> options = [
+                                        PopupMenuItem(
+                                          value: 'invite',
+                                          child: Text('Invite',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: primaryColor)),
+                                          onTap: () {},
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'block',
+                                          child: Text('Block',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red)),
+                                        )
+                                      ];
+                                      return Card(
+                                        elevation: 6,
+                                        margin: EdgeInsets.all(10),
+                                        color: backgroundColor,
+                                        shape: RoundedRectangleBorder(
+                                          side: BorderSide(
+                                              color: Colors.white, width: .5),
+                                        ),
+                                        child: ListTile(
+                                          leading: (c.avatar != null &&
+                                                  c.avatar?.isEmpty == true)
+                                              ? CircleAvatar(
+                                                  backgroundImage:
+                                                      MemoryImage(c.avatar!))
+                                              : CircleAvatar(
+                                                  child: Text(
+                                                    c.initials,
+                                                    style: TextStyle(
+                                                        color: backgroundColor),
+                                                  ),
+                                                  backgroundColor:
+                                                      Colors.grey[100],
+                                                ),
+                                          trailing: PopupMenuButton(
+                                            child: Container(
+                                              // padding: EdgeInsets.all(15),
+                                              // decoration: ShapeDecoration(
+                                              //   color: primaryColor,
+                                              //   shape: CircleBorder(),
+                                              // ),
+                                              child: const Icon(
+                                                Icons.more_horiz,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                            onSelected: (value) async {
+                                              switch (value) {
+                                                case 'block':
+                                                  String title =
+                                                      'Block ${c.name} ?';
+                                                  String content =
+                                                      'If you decide to change your mind, go to Profile -> Block List';
 
-  Future<void> requestPermission(Permission permission) async {
-    final status = await permission.request();
-
-    setState(() {
-      _permissionStatus = status;
-    });
+                                                  return showDialog(
+                                                    context: context,
+                                                    builder: (BuildContext
+                                                        diaContext) {
+                                                      return showAlertDialog(
+                                                          context,
+                                                          title,
+                                                          content,
+                                                          () =>
+                                                              confirmBlockContact(
+                                                                  c));
+                                                    },
+                                                  );
+                                                case 'invite':
+                                                  return widget
+                                                      .inviteContact(c.phone);
+                                                default:
+                                                  throw UnimplementedError();
+                                              }
+                                            },
+                                            itemBuilder: (context) => options,
+                                          ),
+                                          title: Text(c.name,
+                                              style: TextStyle(
+                                                  color: Colors.white)),
+                                        ),
+                                      );
+                                    },
+                                  ))
+                              : Center(
+                                  child: checkTimer()
+                                      ? Text(
+                                          "No Contacts to Display",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.normal,
+                                            fontSize: 12.0,
+                                          ),
+                                        )
+                                      : CircularProgressIndicator()),
+                        ),
+                      ]),
+          ),
+        ]));
   }
 }
 
-class IceCreamCard extends StatelessWidget {
-  const IceCreamCard({
-    this.flavorColor = primaryColor,
-    this.flavor = 'Flavor Name',
-  });
+class PodCard extends StatelessWidget {
+  const PodCard(
+      {this.flavorColor = primaryColor,
+      this.flavor = 'Flavor Name',
+      required this.pod,
+      required this.onSelect});
   final Color flavorColor;
   final String flavor;
+  final PodModel pod;
+  final Function onSelect;
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Color(0xffeeeeee), width: 2.0),
-        color: backgroundColor,
-        borderRadius: BorderRadius.all(Radius.circular(8.0)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white10,
-            blurRadius: 4,
-            spreadRadius: 2,
-            offset: Offset(0, 2),
+    return InkWell(
+        onTap: () => {onSelect(pod.id, 'pod')},
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Color(0xffeeeeee), width: 2.0),
+            color: backgroundColor,
+            borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white10,
+                blurRadius: 4,
+                spreadRadius: 2,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      margin: EdgeInsets.all(8),
-      height: 200,
-      width: 100,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-              child: SvgPicture.asset(
-            'assets/images/dipity.svg',
-            width: 80,
-            height: 80,
-          )),
-          SizedBox(
-            height: 10.0,
+          margin: EdgeInsets.all(8),
+          width: 100,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Center(
+                  child: SvgPicture.asset(
+                'assets/images/dipity.svg',
+                width: 80,
+                height: 80,
+              )),
+              Text(
+                flavor,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.0,
+                    color: Colors.white),
+              ),
+            ],
           ),
-          Text(
-            flavor,
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12.0,
-                color: Colors.white),
-          ),
-        ],
-      ),
-    );
+        ));
   }
 }

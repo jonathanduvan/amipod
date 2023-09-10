@@ -14,6 +14,7 @@ class RemindersView extends StatefulWidget {
 class _RemindersViewState extends State<RemindersView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
   List<Contact> _contacts = [];
+  final items = List<String>.generate(20, (i) => 'Item ${i + 1}');
 
   @override
   void initState() {
@@ -25,72 +26,32 @@ class _RemindersViewState extends State<RemindersView> {
         MediaQuery.of(context).size; //provides total height and width of screen
 
     return Background(
-        child: ListView(
-            padding: const EdgeInsets.only(top: 10.0),
-            children: <Widget>[
-          Container(
-              color: Colors.white,
-              width: size.width * .95,
-              height: size.height * .40,
-              child: Text(
-                "No Reminders to Display",
-                style: TextStyle(
-                  fontWeight: FontWeight.normal,
-                  fontSize: 12.0,
-                ),
-              )
-              //   child: Column(
-              //           mainAxisAlignment: MainAxisAlignment.center,
-              //           children: <Widget>[
-              //               SafeArea(
-              //                 child: checkList(widget.hiveConnections!)
-              //                     ? SizedBox(
-              //                         height: size.height * .40,
-              //                         child: ListView.builder(
-              //                           scrollDirection: Axis.vertical,
-              //                           shrinkWrap: true,
-              //                           itemCount: widget.hiveConnections!.length,
-              //                           itemBuilder: (BuildContext context, int index) {
-              //                             ConnectionModel c =
-              //                                 widget.hiveConnections!.elementAt(index);
+        child: ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Dismissible(
+          // Each Dismissible must contain a Key. Keys allow Flutter to
+          // uniquely identify widgets.
+          key: Key(item),
+          // Provide a function that tells the app
+          // what to do after an item has been swiped away.
+          onDismissed: (direction) {
+            // Remove the item from the data source.
+            setState(() {
+              items.removeAt(index);
+            });
 
-              //                             return Card(
-              //                               elevation: 6,
-              //                               color: dipityBlack,
-              //                               margin: EdgeInsets.all(10),
-              //                               child: ListTile(
-              //                                 onTap: () {},
-              //                                 leading: (c.avatar != null &&
-              //                                         c.avatar?.isEmpty == true)
-              //                                     ? CircleAvatar(
-              //                                         backgroundImage:
-              //                                             MemoryImage(c.avatar!))
-              //                                     : CircleAvatar(
-              //                                         child: Text(
-              //                                         c.initials,
-              //                                         style: TextStyle(
-              //                                             color: Colors.black),
-              //                                       )),
-              //                                 title: Text(c.name),
-              //                               ),
-              //                             );
-              //                           },
-              //                         ))
-              //                     : Center(
-              //                         child: checkTimer()
-              //                             ? Text(
-              //                                 "No Connections to Display",
-              //                                 style: TextStyle(
-              //                                   fontWeight: FontWeight.normal,
-              //                                   fontSize: 12.0,
-              //                                 ),
-              //                               )
-              //                             : CircularProgressIndicator(),
-              //                       ),
-              //               ),
-              //             ])
-              ),
-        ]));
+            // Then show a snackbar.
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text('$item dismissed')));
+          },
+          child: ListTile(
+            title: Text(item),
+          ),
+        );
+      },
+    ));
   }
 }
 

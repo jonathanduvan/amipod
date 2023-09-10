@@ -23,16 +23,18 @@ class ConnectionModelAdapter extends TypeAdapter<ConnectionModel> {
       phone: fields[4] as String,
       lat: fields[5] == null ? 'Not Available' : fields[5] as String?,
       long: fields[6] == null ? 'Not Available' : fields[6] as String?,
+      city: fields[7] == null ? 'Not Available' : fields[7] as String?,
+      blocked: fields[9] == null ? false : fields[9] as bool?,
+      last_update: fields[10] == null ? 'Not Available' : fields[10] as String?,
     )
       ..avatar = fields[3] as Uint8List?
-      ..city = fields[7] == null ? 'Not Available' : fields[7] as String?
       ..street = fields[8] == null ? 'Not Available' : fields[8] as String?;
   }
 
   @override
   void write(BinaryWriter writer, ConnectionModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +52,11 @@ class ConnectionModelAdapter extends TypeAdapter<ConnectionModel> {
       ..writeByte(7)
       ..write(obj.city)
       ..writeByte(8)
-      ..write(obj.street);
+      ..write(obj.street)
+      ..writeByte(9)
+      ..write(obj.blocked)
+      ..writeByte(10)
+      ..write(obj.last_update);
   }
 
   @override

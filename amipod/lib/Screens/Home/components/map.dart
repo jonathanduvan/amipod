@@ -1,21 +1,47 @@
 import 'dart:async';
+import 'dart:math';
+import 'package:vector_math/vector_math.dart' hide Colors;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:dipity/HiveModels/contact_model.dart';
+import 'package:dipity/HiveModels/pod_model.dart';
+import 'package:dipity/Screens/Home/components/viewPanels/view_self.dart';
 import 'package:flutter/services.dart';
 
 import 'package:dipity/HiveModels/connection_model.dart';
 import 'package:dipity/StateManagement/connections_contacts_model.dart';
 import 'package:dipity/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:geocode/geocode.dart';
+import 'viewPanels/view_pod.dart';
+import 'viewPanels/view_connection.dart';
+
+// import 'package:geocode/geocode.dart';
 
 class MapView extends StatefulWidget {
   final List<double> userPosition;
-  const MapView({Key? key, required this.userPosition}) : super(key: key);
+  final String userLocation;
+  final String? selectedConnection;
+  final String? selectedPod;
+  final Function removeSelection;
+  final Function updateSelections;
+  final Map<String, ContactModel> selectedContacts;
+  final Map<String, ConnectionModel> selectedConnections;
+  const MapView(
+      {Key? key,
+      required this.userPosition,
+      required this.userLocation,
+      this.selectedConnection,
+      this.selectedPod,
+      required this.removeSelection,
+      required this.updateSelections,
+      required this.selectedContacts,
+      required this.selectedConnections})
+      : super(key: key);
   @override
   _MapViewState createState() => _MapViewState();
 }
@@ -23,18 +49,20 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   PermissionStatus contactsStatus = PermissionStatus.denied;
   Set<Marker> _markers = {};
-  ConnectionModel? selectedContact;
-
-  final double _initFabHeight = 120.0;
-  double _fabHeight = 0;
-  double _panelHeightOpen = 0;
+  ConnectionModel? selectedConnection;
+  PodModel? selectedPod;
+  Iterable<dynamic>? hiveConnections;
+  CameraPosition? startingCenter;
+  CameraPosition? _cameraPosition;
+  double panelMaxHeight = 400.0;
   double _panelHeightClosed = 0.0;
 
   PanelState panelOpen = PanelState.CLOSED;
 
-  Completer<GoogleMapController> _controller = Completer();
-
+  // Completer<GoogleMapController> _controller = Completer();
+  late GoogleMapController _controller;
   final PanelController _pc = PanelController();
+  PanelState panelStartState = PanelState.OPEN;
 
   BorderRadiusGeometry radius = BorderRadius.only(
     topLeft: Radius.circular(24.0),
@@ -51,13 +79,76 @@ class _MapViewState extends State<MapView> {
   //   controller.animateCamera(CameraUpdate.newCameraPosition(_kLake));
   // }
 
-  void _onTappedMarker(ConnectionModel contact) {
-    print(contact.city);
-    _pc.open();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    hiveConnections = context.read<ConnectionsContactsModel>().hiveConnections;
+
+    startingCenter = CameraPosition(
+      target: LatLng(widget.userPosition[0] - .7, widget.userPosition[1]),
+      zoom: 7.0,
+    );
+
+    if (widget.selectedConnection is String) {
+      selectedConnection =
+          Provider.of<ConnectionsContactsModel>(context, listen: false)
+              .getConnection(widget.selectedConnection!);
+      LatLng connectionPos = getLocation(
+          double.tryParse(selectedConnection!.long!)!,
+          double.tryParse(selectedConnection!.lat!)!,
+          4500);
+      startingCenter = CameraPosition(
+          target: LatLng(connectionPos.latitude - .7, connectionPos.longitude),
+          zoom: 7.0);
+    } else if (widget.selectedPod is String) {
+      selectedPod =
+          Provider.of<ConnectionsContactsModel>(context, listen: false)
+              .getPod(widget.selectedPod!);
+    }
+
+    // Additional code
+  }
+
+  void _onTappedMarker(ConnectionModel connection) {
+    // _pc.open();
     setState(() {
-      selectedContact = contact;
-      _panelHeightClosed = 150.0;
+      selectedConnection = connection;
+      // _panelHeightClosed = 100.0;
     });
+  }
+
+  void _onTouchedSelf() {
+    setState(() {
+      selectedConnection = null;
+      selectedPod = null;
+    });
+  }
+
+  void onBlockedConnection() {
+    _onTouchedSelf();
+  }
+
+  LatLng getLocation(double x0, double y0, int radius) {
+    Random random = new Random();
+
+    // Convert radius from meters to degrees
+    double radiusInDegrees = radius / 111000;
+
+    double u = random.nextDouble();
+    double v = random.nextDouble();
+    double w = radiusInDegrees * sqrt(u);
+    double t = 2 * pi * v;
+    double x = w * cos(t);
+    double y = w * sin(t);
+
+    // Adjust the x-coordinate for the shrinking of the east-west distances
+    double new_x = x / cos(radians(y0));
+
+    double foundLongitude = new_x + x0;
+    double foundLatitude = y + y0;
+
+    return LatLng(foundLatitude, foundLongitude);
   }
 
   Future<Uint8List> getImages(String path, int width) async {
@@ -70,30 +161,49 @@ class _MapViewState extends State<MapView> {
         .asUint8List();
   }
 
-  void _createConnectionMarkers(Iterable<dynamic> contacts) async {
+  void _createConnectionMarkers(Iterable<dynamic> connections) async {
     Set<Marker> newMarkers = {};
-
     LatLng userPos = LatLng(widget.userPosition[0], widget.userPosition[1]);
 
-    final Uint8List userShip = await getImages('assets/icons/ship-2.png', 100);
-    final Uint8List contactShip =
-        await getImages('assets/icons/ship-1.png', 100);
+    // The equivalent of the "smallestWidth" qualifier on Android.
+    var shortestSide = MediaQuery.of(context).size.shortestSide;
+
+    // Determine if we should use mobile layout or not, 600 here is
+    // a common breakpoint for a typical 7-inch tablet.
+    final bool useMobileLayout = shortestSide < 600;
+    int shipWidth = 100;
+    if (useMobileLayout) {
+      shipWidth = 70;
+    }
+
+    final Uint8List userShip =
+        await getImages('assets/icons/ship-2.png', shipWidth);
+    final Uint8List connectionShip =
+        await getImages('assets/icons/ship-1.png', shipWidth);
 
     newMarkers.add(Marker(
-        markerId: MarkerId('primary-user'),
-        position: userPos,
-        icon: BitmapDescriptor.fromBytes(userShip)));
-    for (ConnectionModel contact in contacts) {
-      LatLng contactPos = LatLng(
-          double.tryParse(contact.lat!)!, double.tryParse(contact.long!)!);
+      markerId: MarkerId('primary-user'),
+      position: userPos,
+      icon: BitmapDescriptor.fromBytes(userShip),
+      onTap: () {
+        _onTouchedSelf();
+      },
+    ));
+    for (ConnectionModel connection in connections) {
+      List<Location> locations = await locationFromAddress(connection.city!);
+      Location maskedLoc = locations[0];
+      // LatLng connectionPos = LatLng(double.tryParse(connection.lat!)!,
+      //     double.tryParse(connection.long!)!);
+      // LatLng connectionPos = LatLng(maskedLoc.latitude, maskedLoc.longitude);
+      LatLng connectionPos = getLocation(double.tryParse(connection.long!)!,
+          double.tryParse(connection.lat!)!, 4500);
       newMarkers.add(Marker(
-          markerId: MarkerId('connection-${contact.id}'),
-          position: contactPos,
-          icon: BitmapDescriptor.fromBytes(contactShip),
+          markerId: MarkerId('connection-${connection.id}'),
+          position: connectionPos,
+          icon: BitmapDescriptor.fromBytes(connectionShip),
           onTap: () {
-            _onTappedMarker(contact);
+            _onTappedMarker(connection);
           }));
-      print(contactPos);
     }
     setState(() {
       _markers.addAll(newMarkers);
@@ -114,30 +224,42 @@ class _MapViewState extends State<MapView> {
     }
   }
 
+  void closePanel() {
+    _pc.close();
+  }
+
+  void editMode(bool toggled) {
+    if (toggled) {
+      _pc.animatePanelToPosition(1.0);
+    } else {
+      _pc.close();
+    }
+  }
+
+  onMapCreated(GoogleMapController controller) async {
+    _controller = controller;
+    _createConnectionMarkers(hiveConnections!);
+    String value = await DefaultAssetBundle.of(context)
+        .loadString('assets/map_style.json');
+    _controller.setMapStyle(value);
+  }
+
+  @override
   Widget build(BuildContext context) {
     Size size =
         MediaQuery.of(context).size; //provides total height and width of screen
-
-    Iterable<dynamic> hiveConnections =
-        context.select<ConnectionsContactsModel, Iterable<dynamic>>(
-            (ccModel) => ccModel.hiveConnections);
-
-    CameraPosition startingCenter = CameraPosition(
-      target: LatLng(widget.userPosition[0], widget.userPosition[1]),
-      zoom: 6.0,
-    );
     return Scaffold(
       body: SlidingUpPanel(
           controller: _pc,
           panelBuilder: (ScrollController sc) => _panel(sc),
+          // defaultPanelState: panelStartState,
           borderRadius: radius,
-          minHeight: _panelHeightClosed,
+          // minHeight: _panelHeightClosed,
+          maxHeight: size.height,
           body: GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: startingCenter,
+            initialCameraPosition: startingCenter!,
             onMapCreated: (GoogleMapController controller) {
-              _createConnectionMarkers(hiveConnections);
-              _controller.complete(controller);
+              onMapCreated(controller);
             },
             onCameraMove: (position) {},
             markers: _markers,
@@ -154,7 +276,7 @@ class _MapViewState extends State<MapView> {
           controller: sc,
           children: <Widget>[
             SizedBox(
-              height: 12.0,
+              height: 6.0,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -169,83 +291,28 @@ class _MapViewState extends State<MapView> {
               ],
             ),
             SizedBox(
-              height: 18.0,
+              height: 10.0,
             ),
-            selectedContact != null
-                ? Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: <Widget>[
-                            Text(
-                              selectedContact!.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20.0,
-                              ),
-                            ),
-                            Text(
-                              (selectedContact!.city == null
-                                  ? 'No Name found'
-                                  : selectedContact!.city!),
-                              style: TextStyle(
-                                fontWeight: FontWeight.normal,
-                                fontSize: 15.0,
-                              ),
-                            ),
-                          ]),
-                    ],
-                  )
+            selectedConnection is ConnectionModel
+                ? ViewConnectionFormPanel(
+                    id: selectedConnection!.id,
+                    onBlockConnection: onBlockedConnection)
                 : Container(),
-            SizedBox(
-              height: 36.0,
-            ),
-            SizedBox(
-              height: 36.0,
-            ),
-            Container(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text("Images",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      )),
-                  SizedBox(
-                    height: 12.0,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 36.0,
-            ),
-            Container(
-              padding: const EdgeInsets.only(left: 24.0, right: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text("About",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                      )),
-                  SizedBox(
-                    height: 12.0,
-                  ),
-                  Text(
-                    """Pittsburgh is a city in the state of Pennsylvania in the United States, and is the county seat of Allegheny County. A population of about 302,407 (2018) residents live within the city limits, making it the 66th-largest city in the U.S. The metropolitan population of 2,324,743 is the largest in both the Ohio Valley and Appalachia, the second-largest in Pennsylvania (behind Philadelphia), and the 27th-largest in the U.S.\n\nPittsburgh is located in the southwest of the state, at the confluence of the Allegheny, Monongahela, and Ohio rivers. Pittsburgh is known both as "the Steel City" for its more than 300 steel-related businesses and as the "City of Bridges" for its 446 bridges. The city features 30 skyscrapers, two inclined railways, a pre-revolutionary fortification and the Point State Park at the confluence of the rivers. The city developed as a vital link of the Atlantic coast and Midwest, as the mineral-rich Allegheny Mountains made the area coveted by the French and British empires, Virginians, Whiskey Rebels, and Civil War raiders.\n\nAside from steel, Pittsburgh has led in manufacturing of aluminum, glass, shipbuilding, petroleum, foods, sports, transportation, computing, autos, and electronics. For part of the 20th century, Pittsburgh was behind only New York City and Chicago in corporate headquarters employment; it had the most U.S. stockholders per capita. Deindustrialization in the 1970s and 80s laid off area blue-collar workers as steel and other heavy industries declined, and thousands of downtown white-collar workers also lost jobs when several Pittsburgh-based companies moved out. The population dropped from a peak of 675,000 in 1950 to 370,000 in 1990. However, this rich industrial history left the area with renowned museums, medical centers, parks, research centers, and a diverse cultural district.\n\nAfter the deindustrialization of the mid-20th century, Pittsburgh has transformed into a hub for the health care, education, and technology industries. Pittsburgh is a leader in the health care sector as the home to large medical providers such as University of Pittsburgh Medical Center (UPMC). The area is home to 68 colleges and universities, including research and development leaders Carnegie Mellon University and the University of Pittsburgh. Google, Apple Inc., Bosch, Facebook, Uber, Nokia, Autodesk, Amazon, Microsoft and IBM are among 1,600 technology firms generating \$20.7 billion in annual Pittsburgh payrolls. The area has served as the long-time federal agency headquarters for cyber defense, software engineering, robotics, energy research and the nuclear navy. The nation's eighth-largest bank, eight Fortune 500 companies, and six of the top 300 U.S. law firms make their global headquarters in the area, while RAND Corporation (RAND), BNY Mellon, Nova, FedEx, Bayer, and the National Institute for Occupational Safety and Health (NIOSH) have regional bases that helped Pittsburgh become the sixth-best area for U.S. job growth.
-                  """,
-                    softWrap: true,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 24,
-            ),
+            (selectedPod is PodModel)
+                ? ViewPodFormPanel(
+                    id: selectedPod!.id,
+                    closePanel: closePanel,
+                    editModeToggled: editMode,
+                    removeSelection: widget.removeSelection,
+                    updateSelections: widget.updateSelections,
+                    selectedContacts: widget.selectedContacts,
+                    selectedConnections: widget.selectedConnections,
+                    onPodDeleted: _onTouchedSelf)
+                : Container(),
+            (!(selectedConnection is ConnectionModel) &&
+                    !(selectedPod is PodModel))
+                ? ViewSelfPanel(userLocation: widget.userLocation)
+                : Container()
           ],
         ));
   }
