@@ -47,3 +47,9 @@ app.*.map.json
 
 *.env
 env.g.dart
+
+## Custom
+# Google API key and other resources
+GoogleService-Info.plist
+google-services.json
+firebase_options.dart

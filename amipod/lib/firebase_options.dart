@@ -67,13 +67,14 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAn79uqaMpt7CVymxD7PXIQrGXnqX2bSBI',
+    apiKey: 'AIzaSyAKKtNv9nOtCRyvTfhnGMVFEVlR58xWVmI',
     appId: '1:540041693797:ios:57d0b2958873d027c9148c',
     messagingSenderId: '540041693797',
     projectId: 'dipity-716b0',
     databaseURL: 'https://dipity-716b0-default-rtdb.firebaseio.com',
     storageBucket: 'dipity-716b0.appspot.com',
-    iosClientId: '540041693797-a2n4r7pcags8p60i7r3ucbi4m5mh3hur.apps.googleusercontent.com',
+    iosClientId:
+        '540041693797-a2n4r7pcags8p60i7r3ucbi4m5mh3hur.apps.googleusercontent.com',
     iosBundleId: 'com.onatcipli.dipity',
   );
 }
